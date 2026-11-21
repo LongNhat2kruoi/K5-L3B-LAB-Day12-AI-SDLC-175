@@ -4,12 +4,12 @@
 
 Danh sách được đối chiếu với Git history và các module đã thay đổi.
 
-| Thành viên | GitHub handle | Module chính | Vai quy trình | Người dự phòng |
-|---|---|---|---|---|
-| Long Nhat | LongNhat2kruoi | `sim/gather`, `runner` | Integrator, PO | quangpham |
-| KemmVSAI | KemmVSAI | `sim/gather`, inventory | Gather Resources | LongNhat2kruoi |
-| quangpham | quangpham | `sim/quan`, contract v1.1/v1.2 | PO, Backend | buiductuan |
-| Bùi Đức Tuấn | buiductuan | `play/`, pixel-art, UI | UI, Release | LongNhat2kruoi |
+| Họ tên | MSSV | GitHub handle | Module chính | Vai quy trình | Người dự phòng |
+|---|---|---|---|---|---|
+| Lê Sỹ Long Nhật | 2A202603881 | LongNhat2kruoi | `sim/gather`, `runner` | Integrator, PO | quangpham |
+| Đinh Quốc Việt | 2A202603885 | dinhquocviet | `sim/gather`, inventory | Gather Resources | LongNhat2kruoi |
+| Phạm Quang Dũng | 2A202603896 | quangpham | `sim/quan`, contract v1.1/v1.2 | PO, Backend | buiductuan |
+| Bùi Đức Tuấn | 2A202603902 | buiductuan | `play/`, pixel-art, UI | UI, Release | LongNhat2kruoi |
 
 ## Thỏa thuận làm việc nhóm
 
