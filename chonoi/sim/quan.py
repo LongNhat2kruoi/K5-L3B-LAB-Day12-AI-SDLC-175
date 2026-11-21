@@ -42,6 +42,8 @@ class QuanSim:
         for e in self.customers:
             ids.reserve(e["id"])
         self._check_fixture()
+        self.phase_tick = 0
+        self.random_customers = scenario.get("random_customers", True)
         self.money = 0
         self.earned = 0
         self.shift_earned = 0
@@ -73,7 +75,7 @@ class QuanSim:
         # đơn reserved thiếu reserved: cấp theo công thức, xét (order_tick, id bàn)
         for e in sorted(out, key=lambda x: (x["order_tick"], id_key(x["table_id"]))):
             if "reserved" not in e:
-                recipe = dict(sorted(self.menu[e["dish_id"]]["recipe"].items()))
+                recipe = dict(sorted(self.menu[e["dish_id"]]["recipe"].items()))  # bản sao, không dùng chung với menu
                 e["reserved"] = recipe if e["order_status"] == "reserved" else {}
         return out
 
@@ -139,17 +141,90 @@ class QuanSim:
 
     def step(self, inp):
         events = []
+        # Bước 1: đồng hồ, kiên nhẫn (khách waiting), timer ăn (khách eating)
+        self.phase_tick += 1
         self.time_left_ticks = max(0, self.time_left_ticks - 1)
-        # TODO(nhóm): giảm kiên nhẫn / nấu / ăn; bếp chín -> ready; xử lý khách theo thứ tự PRD-0 mục F.
+        for c in self.customers:
+            if c["state"] == "waiting":
+                c["patience_ticks_left"] = max(0, c["patience_ticks_left"] - 1)
+            elif c["state"] == "eating":
+                c["eat_ticks_left"] = max(0, c["eat_ticks_left"] - 1)
+        # TODO(lát 4): bếp đang nấu giảm cook_ticks_left; chín -> ready (dish_ready); bếp ready tăng ready_ticks.
+        # Bước 2: di chuyển
         self._move(inp)
-        # TODO(nhóm): tối đa MỘT interact, chọn đối tượng theo (khoảng cách, bếp trước bàn, id).
-        # TODO(nhóm): khách mới theo lịch (first_customer_tick, customer_interval_s), no_dish.
-        if self.time_left_ticks <= 0:
+        # Bước 3: tối đa MỘT interact
+        # TODO(lát 4): chọn đối tượng gần nhất, cook_started / dish_picked / served (R11).
+        # Bước 4: khách rời / trả tiền theo id bàn
+        in_time = self.time_left_ticks > 0
+        for c in sort_by_id(self.customers, key=lambda x: x["table_id"]):
+            # TODO(lát 4): khách eating hết eat (hoặc hết ca) trả tiền -> paid, rời bàn.
+            if c["state"] != "waiting":
+                continue
+            if in_time:
+                if c["patience_ticks_left"] == 0:
+                    lo, hi = self.t["reputation_min"], self.t["reputation_max"]
+                    self.reputation = min(hi, max(lo, self.reputation + self.t["left_reputation_delta"]))
+                    self._leave(events, c, "patience")
+            else:
+                self._leave(events, c, "closing")
+        if not in_time:
             self.done = True
             self.reason = "time"
             events.append(("quan_end", {"reason": "time", "money": self.money, "earned": self.earned,
                                         "shift_earned": self.shift_earned, "reputation": self.reputation}))
+            return events
+        # Bước 5: khách mới theo lịch
+        if self.random_customers and self._customer_due():
+            self._spawn_customer(events)
         return events
+
+    def _leave(self, events, c, reason):
+        self._remove_customer(c)
+        events.append(("customer_left", {"order_id": c["id"], "table_id": c["table_id"],
+                                         "reason": reason, "reputation": self.reputation}))
+
+    def _customer_due(self):
+        first = self.t["first_customer_tick"]
+        interval = int(round(self.t["customer_interval_s"] * 60))
+        return self.phase_tick >= first and (self.phase_tick - first) % interval == 0
+
+    def _available(self):
+        """Tồn vật lý trừ phần đang giữ chỗ của các khách."""
+        avail = dict(self.stock)
+        for c in self.customers:
+            for k, v in c["reserved"].items():
+                avail[k] = avail.get(k, 0) - v
+        return avail
+
+    def _spawn_customer(self, events):
+        taken = {c["table_id"] for c in self.customers}
+        free = [tb for tb in self.tables if tb["id"] not in taken]
+        if not free:
+            return
+        table = free[0]  # self.tables đã sắp theo id
+        avail = self._available()
+        cands = [d for d in sorted(self.menu)
+                 if all(avail.get(k, 0) >= n for k, n in self.menu[d]["recipe"].items())]
+        if not cands:
+            events.append(("no_dish", {}))
+            return
+        dish = cands[self.rng.get("customer_dish").randrange(len(cands))]
+        c = {"id": self.ids.new("C"), "table_id": table["id"], "dish_id": dish,
+             "order_tick": self.phase_tick, "state": "waiting",
+             "patience_ticks_left": int(round(self.t["patience_s"] * 60)), "eat_ticks_left": 0,
+             "order_status": "reserved", "reserved": dict(sorted(self.menu[dish]["recipe"].items())),
+             "base_price": None, "tip": None}
+        self.customers.append(c)
+        events.append(("customer_arrived", {"order_id": c["id"], "table_id": c["table_id"], "dish_id": dish}))
+
+    def _remove_customer(self, c):
+        """Khách rời: nhả giữ chỗ, bỏ món của đơn trên bếp / tay."""
+        self.customers.remove(c)
+        for s in self.stoves:
+            if s["dish"] is not None and s["dish"]["order_id"] == c["id"]:
+                s.update(state="idle", dish=None, cook_ticks_left=0, ready_ticks=0)
+        if self.hand is not None and self.hand["order_id"] == c["id"]:
+            self.hand = None
 
     def _move(self, inp):
         speed = self.t["walk_speed"]
