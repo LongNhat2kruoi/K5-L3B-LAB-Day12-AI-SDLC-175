@@ -73,7 +73,8 @@ class QuanSim:
         # đơn reserved thiếu reserved: cấp theo công thức, xét (order_tick, id bàn)
         for e in sorted(out, key=lambda x: (x["order_tick"], id_key(x["table_id"]))):
             if "reserved" not in e:
-                e["reserved"] = dict(sorted(self.menu[e["dish_id"]]["recipe"].items()))                     if e["order_status"] == "reserved" else {}
+                recipe = dict(sorted(self.menu[e["dish_id"]]["recipe"].items()))
+                e["reserved"] = recipe if e["order_status"] == "reserved" else {}
         return out
 
     def _check_fixture(self):

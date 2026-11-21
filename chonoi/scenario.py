@@ -212,7 +212,7 @@ def _payload(name, v, menu):
         raise BadInput(f"{name} phải là null hoặc object đúng khóa {sorted(PAYLOAD_KEYS)}")
     if not isinstance(v["order_id"], str):
         raise BadInput(f"{name}.order_id phải là chuỗi")
-    if v["dish_id"] not in menu:
+    if not isinstance(v["dish_id"], str) or v["dish_id"] not in menu:
         raise BadInput(f"{name}.dish_id không có trong menu")
     bp = v["base_price"]
     if isinstance(bp, bool) or not isinstance(bp, int) or bp <= 0:

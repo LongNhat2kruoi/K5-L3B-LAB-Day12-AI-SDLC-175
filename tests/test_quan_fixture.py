@@ -91,6 +91,16 @@ class Contradictions(unittest.TestCase):
     def test_waiting_eat_ticks_khac_0(self):
         self.assert_rejected({"stock": {"ca_loc": 1}, "customers": [cust(eat_ticks_left=5)]})
 
+    def test_payload_dish_id_khong_phai_chuoi(self):
+        self.assert_rejected({"hand": payload(dish_id=[])})
+
+    def test_boolean_khong_phai_so(self):
+        eating = dict(state="eating", order_status="served", eat_ticks_left=30)
+        self.assert_rejected({"customers": [cust(base_price=60, tip=True, **eating)]})
+        self.assert_rejected({"customers": [cust(base_price=True, tip=0, **eating)]})
+        self.assert_rejected({"hand": payload(base_price=True)})
+        self.assert_rejected({"reputation": True})
+
     def test_reputation_ngoai_mien(self):
         self.assert_rejected({"reputation": 5.5})
         self.assert_rejected({"reputation": -1})
