@@ -24,7 +24,7 @@ import math
 
 from ..ids import sort_by_id
 from .. import fresh
-from ..inventory import hold_to_items
+from ..inventory import hold_to_items, validate_item_list
 from .ramp import ramp_velocity
 
 TICK = 60.0
@@ -54,7 +54,11 @@ class GatherSim:
         self.zero_oxy_ticks = p.get("zero_oxy_ticks", 0)
         self.invuln_ticks = p.get("invuln_ticks", 0)
         self.catch_cd_ticks = p.get("catch_cd_ticks", 0)
-        self.hold = list(scenario.get("hold", []))  # thứ tự nhặt, cuối mảng là mới nhất
+        # thứ tự nhặt, cuối mảng là mới nhất; v1.2: cá thể {id, kind, fresh}, cờ tắt: id nguyên liệu
+        self.hold = validate_item_list(scenario.get("hold", [])) if self.v12 else list(scenario.get("hold", []))
+        for e in self.hold:
+            if self.v12:
+                ids.reserve(e["id"])
         self.time_left_ticks = scenario.get("time_left_ticks", int(round(t["duration_s"] * TICK)))
         # nút và đàn cá: scenario THAY THẾ danh sách mặc định; random_fish=false tắt cá mặc định
         src_nodes = scenario["nodes"] if "nodes" in scenario else t["nodes"]
@@ -79,11 +83,19 @@ class GatherSim:
         self.reason = None
 
     # --- giao diện cho runner -------------------------------------------------
+    def _hold_json(self):
+        return [{"id": e["id"], "kind": e["kind"], "fresh": fresh.to_json(e["fresh"])} for e in self.hold]
+
+    def _pick(self, kind, quantity):
+        if self.v12:
+            self.hold.extend({"id": self.ids.new("I"), "kind": kind, "fresh": self.initial_fresh}
+                             for _ in range(quantity))
+        else:
+            self.hold.extend([kind] * quantity)
+
     def inventory_items(self) -> dict:
         if self.v12:
-            return [{"id": f"G{i}", "kind": kind,
-                     "fresh": fresh.to_json(self.initial_fresh)}
-                    for i, kind in enumerate(self.hold, 1)]
+            return self._hold_json()
         return hold_to_items(self.hold)
 
     def snapshot(self) -> dict:
@@ -93,7 +105,7 @@ class GatherSim:
                        "hp": self.hp, "hp_max": self.t["hp_max"], "zero_oxy_ticks": self.zero_oxy_ticks,
                        "invuln_ticks": self.invuln_ticks, "catch_cd_ticks": self.catch_cd_ticks,
                        "at_surface": self._at_surface()},
-            "hold": self.hold, "hold_count": len(self.hold),
+            "hold": self._hold_json() if self.v12 else self.hold, "hold_count": len(self.hold),
             "hold_capacity": self.t["hold_capacity"],
             "nodes": [{"id": n["id"], "pos": n["pos"], "kind": n["kind"],
                        "ready": n["regrow_ticks"] == 0, "regrow_ticks": n["regrow_ticks"]}
@@ -130,7 +142,7 @@ class GatherSim:
                 if node is not None:
                     quantity = int(self.t["node_yield"])
                     if self._can_hold(quantity):
-                        self.hold.extend([node["kind"]] * quantity)
+                        self._pick(node["kind"], quantity)
                         node["regrow_ticks"] = int(round(self.t["regrow_s"] * TICK))
                         events.append(("gather", {
                             "node_id": node["id"], "kind": node["kind"], "quantity": quantity,
@@ -146,7 +158,7 @@ class GatherSim:
             if fish is not None:
                 quantity = int(self.t["fish_yield"][fish["kind"]])
                 if self._can_hold(quantity):
-                    self.hold.extend([fish["kind"]] * quantity)
+                    self._pick(fish["kind"], quantity)
                     self.fish.remove(fish)
                     self.catch_cd_ticks = int(round(self.t["catch_cooldown_s"] * TICK))
                     events.append(("fish_caught", {
