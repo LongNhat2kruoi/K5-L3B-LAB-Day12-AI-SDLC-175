@@ -11,3 +11,5 @@
 | Q7 | P1 | Chọn món "đều theo seed" bằng cách nào? | Ứng viên là món đủ nguyên liệu khả dụng, duyệt theo id món (Unicode); chọn bằng `Streams.get("customer_dish").randrange(len)`. | TV3 |
 | Q8 | P1 | Bàn gần nhất không tương tác được thì có thử đối tượng kế tiếp? | Không, bỏ lượt (PRD F bước 3). | TV3 |
 | Q9 | P1 | Khách fixture có bắt buộc `dish_id`? | Có, mọi trạng thái đơn (kể cả `unfulfillable`) phải có `dish_id` thuộc menu; thiếu → mã 2. | TV3 |
+| Q13 | P2 | Quán biết món kế hoạch ngày bằng cách nào khi chạy `--mode day`? | `QuanSim(..., plan_dishes=...)` nhận tập id món của `day_plan[n].dishes`; lát 4 (day) truyền vào khi dựng quán. `None` = quán chạy riêng, dùng cả 6 món (TICKET-02 mục 2). Lọc theo kế hoạch trước, rồi mới lọc kho khả dụng (mục 4.5). | TV3 |
+| Q14 | P2 | Trong `day`, khách fixture gọi món ngoài kế hoạch? | Mã 2 lúc dựng quán (TICKET-02 mục 4.3 "món thuộc kế hoạch được kiểm"). | TV3 |

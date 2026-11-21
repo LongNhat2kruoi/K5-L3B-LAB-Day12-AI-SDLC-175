@@ -1,0 +1,104 @@
+# commit: bb52d65 — chạy: python3 docs/proof/phase-2/quan/e2e_quan_v11.py <thư-mục-tạm>
+== 0. Dữ liệu v1.1 ==
+PASS 2 bếp B1, B2
+PASS 4 bàn T1-T4
+PASS 6 món
+PASS D1 ingredients = tổng công thức × suất {'bong_sung': 6, 'ca_loc': 3}
+PASS D2 ingredients = tổng công thức × suất {'bong_dien_dien': 2, 'ca_linh': 6, 'ca_loc': 2}
+PASS D3 ingredients = tổng công thức × suất {'bong_dien_dien': 2, 'bong_sung': 4, 'ca_keo': 4, 'ca_loc': 2}
+PASS D4 ingredients = tổng công thức × suất {'bong_dien_dien': 1, 'bong_sung': 2, 'ca_keo': 1, 'ca_linh': 2, 'ca_loc': 2, 'keo_neo': 1}
+PASS D5 ingredients = tổng công thức × suất {'bong_dien_dien': 2, 'ca_keo': 1, 'ca_linh': 5, 'ca_loc': 1, 'keo_neo': 1}
+== 1. Smoke tích hợp gather --inventory-out -> quan --inventory ==
+$ python3 -m chonoi.headless --mode gather --seed 42 --scenario dock.json --inputs dock-inputs.json --ticks 1 --out gather.jsonl --inventory-out catch.json -> 0 
+PASS gather exit 0
+$ python3 -m chonoi.headless --mode quan --seed 42 --inventory catch.json --ticks 0 --out quan0.jsonl -> 0 
+PASS quan exit 0
+catch.json = {'items': {'bong_sung': 2, 'ca_loc': 1}} | quan stock tick0 = {'bong_sung': 2, 'ca_loc': 1}
+PASS quán nhận đúng file kho
+PASS snapshot tick 0 có 2 bếp, 4 bàn
+== 2. Ca quán 4 bàn/2 bếp bằng input thật (bot) ==
+$ python3 -m chonoi.headless --mode quan --seed 11 --inventory kho-quan.json --inputs quan-inputs.json --ticks 10805 --out quan-ca-1.jsonl -> 0 
+PASS ca quán lần 1 exit 0
+$ python3 -m chonoi.headless --mode quan --seed 11 --inventory kho-quan.json --inputs quan-inputs.json --ticks 10805 --out quan-ca-2.jsonl -> 0 
+PASS ca quán lần 2 exit 0
+PASS cùng seed + input -> JSONL giống từng byte
+Chuỗi event:
+  tick   120 customer_arrived {"order_id": "C1", "table_id": "T1", "dish_id": "ca_keo_nuong"}
+  tick   171 cook_started     {"stove_id": "B2", "order_id": "C1", "dish_id": "ca_keo_nuong", "items": ["ca_keo", "ca_keo"], "base_price": 70}
+  tick   531 dish_ready       {"stove_id": "B2", "order_id": "C1", "dish_id": "ca_keo_nuong"}
+  tick   532 dish_picked      {"stove_id": "B2", "order_id": "C1", "dish_id": "ca_keo_nuong"}
+  tick   614 served           {"order_id": "C1", "table_id": "T1", "dish_id": "ca_keo_nuong", "patience_ticks_left": 3106, "base_price": 70, "tip": 14}
+  tick  1020 customer_arrived {"order_id": "C2", "table_id": "T2", "dish_id": "ca_loc_nuong_trui"}
+  tick  1102 cook_started     {"stove_id": "B2", "order_id": "C2", "dish_id": "ca_loc_nuong_trui", "items": ["ca_loc"], "base_price": 60}
+  tick  1214 paid             {"order_id": "C1", "table_id": "T1", "base_price": 70, "tip": 14, "amount": 84, "reason": "finished_eating"}
+  tick  1462 dish_ready       {"stove_id": "B2", "order_id": "C2", "dish_id": "ca_loc_nuong_trui"}
+  tick  1463 dish_picked      {"stove_id": "B2", "order_id": "C2", "dish_id": "ca_loc_nuong_trui"}
+  tick  1588 served           {"order_id": "C2", "table_id": "T2", "dish_id": "ca_loc_nuong_trui", "patience_ticks_left": 3032, "base_price": 60, "tip": 12}
+  tick  1920 customer_arrived {"order_id": "C3", "table_id": "T1", "dish_id": "canh_chua_ca_loc"}
+  tick  2044 cook_started     {"stove_id": "B2", "order_id": "C3", "dish_id": "canh_chua_ca_loc", "items": ["bong_dien_dien", "ca_loc"], "base_price": 90}
+  tick  2188 paid             {"order_id": "C2", "table_id": "T2", "base_price": 60, "tip": 12, "amount": 72, "reason": "finished_eating"}
+  tick  2524 dish_ready       {"stove_id": "B2", "order_id": "C3", "dish_id": "canh_chua_ca_loc"}
+  tick  2525 dish_picked      {"stove_id": "B2", "order_id": "C3", "dish_id": "canh_chua_ca_loc"}
+  tick  2608 served           {"order_id": "C3", "table_id": "T1", "dish_id": "canh_chua_ca_loc", "patience_ticks_left": 2912, "base_price": 90, "tip": 18}
+  tick  2820 customer_arrived {"order_id": "C4", "table_id": "T2", "dish_id": "canh_chua_ca_loc"}
+  tick  2902 cook_started     {"stove_id": "B2", "order_id": "C4", "dish_id": "canh_chua_ca_loc", "items": ["bong_dien_dien", "ca_loc"], "base_price": 90}
+  tick  3208 paid             {"order_id": "C3", "table_id": "T1", "base_price": 90, "tip": 18, "amount": 108, "reason": "finished_eating"}
+  tick  3382 dish_ready       {"stove_id": "B2", "order_id": "C4", "dish_id": "canh_chua_ca_loc"}
+  tick  3383 dish_picked      {"stove_id": "B2", "order_id": "C4", "dish_id": "canh_chua_ca_loc"}
+  tick  3509 served           {"order_id": "C4", "table_id": "T2", "dish_id": "canh_chua_ca_loc", "patience_ticks_left": 2911, "base_price": 90, "tip": 18}
+  tick  3720 customer_arrived {"order_id": "C5", "table_id": "T1", "dish_id": "ca_keo_nuong"}
+  tick  3844 cook_started     {"stove_id": "B2", "order_id": "C5", "dish_id": "ca_keo_nuong", "items": ["ca_keo", "ca_keo"], "base_price": 70}
+  tick  4109 paid             {"order_id": "C4", "table_id": "T2", "base_price": 90, "tip": 18, "amount": 108, "reason": "finished_eating"}
+  tick  4204 dish_ready       {"stove_id": "B2", "order_id": "C5", "dish_id": "ca_keo_nuong"}
+  tick  4205 dish_picked      {"stove_id": "B2", "order_id": "C5", "dish_id": "ca_keo_nuong"}
+  tick  4288 served           {"order_id": "C5", "table_id": "T1", "dish_id": "ca_keo_nuong", "patience_ticks_left": 3032, "base_price": 70, "tip": 14}
+  tick  4620 customer_arrived {"order_id": "C6", "table_id": "T2", "dish_id": "goi_bong_sung"}
+  tick  4702 cook_started     {"stove_id": "B2", "order_id": "C6", "dish_id": "goi_bong_sung", "items": ["bong_sung", "bong_sung"], "base_price": 40}
+  tick  4888 paid             {"order_id": "C5", "table_id": "T1", "base_price": 70, "tip": 14, "amount": 84, "reason": "finished_eating"}
+  tick  4942 dish_ready       {"stove_id": "B2", "order_id": "C6", "dish_id": "goi_bong_sung"}
+  tick  4943 dish_picked      {"stove_id": "B2", "order_id": "C6", "dish_id": "goi_bong_sung"}
+  tick  5068 served           {"order_id": "C6", "table_id": "T2", "dish_id": "goi_bong_sung", "patience_ticks_left": 3152, "base_price": 40, "tip": 8}
+  tick  5520 customer_arrived {"order_id": "C7", "table_id": "T1", "dish_id": "goi_bong_sung"}
+  tick  5644 cook_started     {"stove_id": "B2", "order_id": "C7", "dish_id": "goi_bong_sung", "items": ["bong_sung", "bong_sung"], "base_price": 40}
+  tick  5668 paid             {"order_id": "C6", "table_id": "T2", "base_price": 40, "tip": 8, "amount": 48, "reason": "finished_eating"}
+  tick  5884 dish_ready       {"stove_id": "B2", "order_id": "C7", "dish_id": "goi_bong_sung"}
+  tick  5885 dish_picked      {"stove_id": "B2", "order_id": "C7", "dish_id": "goi_bong_sung"}
+  tick  5968 served           {"order_id": "C7", "table_id": "T1", "dish_id": "goi_bong_sung", "patience_ticks_left": 3152, "base_price": 40, "tip": 8}
+  tick  6420 customer_arrived {"order_id": "C8", "table_id": "T2", "dish_id": "lau_ca_linh_dien_dien"}
+  tick  6502 cook_started     {"stove_id": "B2", "order_id": "C8", "dish_id": "lau_ca_linh_dien_dien", "items": ["bong_dien_dien", "ca_linh", "ca_linh", "ca_linh"], "base_price": 120}
+  tick  6568 paid             {"order_id": "C7", "table_id": "T1", "base_price": 40, "tip": 8, "amount": 48, "reason": "finished_eating"}
+  tick  7102 dish_ready       {"stove_id": "B2", "order_id": "C8", "dish_id": "lau_ca_linh_dien_dien"}
+  tick  7103 dish_picked      {"stove_id": "B2", "order_id": "C8", "dish_id": "lau_ca_linh_dien_dien"}
+  tick  7227 served           {"order_id": "C8", "table_id": "T2", "dish_id": "lau_ca_linh_dien_dien", "patience_ticks_left": 2793, "base_price": 120, "tip": 24}
+  tick  7320 customer_arrived {"order_id": "C9", "table_id": "T1", "dish_id": "ca_loc_nuong_trui"}
+  tick  7444 cook_started     {"stove_id": "B2", "order_id": "C9", "dish_id": "ca_loc_nuong_trui", "items": ["ca_loc"], "base_price": 60}
+  tick  7804 dish_ready       {"stove_id": "B2", "order_id": "C9", "dish_id": "ca_loc_nuong_trui"}
+  tick  7805 dish_picked      {"stove_id": "B2", "order_id": "C9", "dish_id": "ca_loc_nuong_trui"}
+  tick  7827 paid             {"order_id": "C8", "table_id": "T2", "base_price": 120, "tip": 24, "amount": 144, "reason": "finished_eating"}
+  tick  7888 served           {"order_id": "C9", "table_id": "T1", "dish_id": "ca_loc_nuong_trui", "patience_ticks_left": 3032, "base_price": 60, "tip": 12}
+  tick  8220 customer_arrived {"order_id": "C10", "table_id": "T2", "dish_id": "lau_mam"}
+  tick  8302 cook_started     {"stove_id": "B2", "order_id": "C10", "dish_id": "lau_mam", "items": ["bong_dien_dien", "ca_keo", "ca_linh", "ca_linh", "keo_neo"], "base_price": 200}
+  tick  8488 paid             {"order_id": "C9", "table_id": "T1", "base_price": 60, "tip": 12, "amount": 72, "reason": "finished_eating"}
+  tick  9022 dish_ready       {"stove_id": "B2", "order_id": "C10", "dish_id": "lau_mam"}
+  tick  9023 dish_picked      {"stove_id": "B2", "order_id": "C10", "dish_id": "lau_mam"}
+  tick  9120 no_dish          {}
+  tick  9148 served           {"order_id": "C10", "table_id": "T2", "dish_id": "lau_mam", "patience_ticks_left": 2672, "base_price": 200, "tip": 40}
+  tick  9748 paid             {"order_id": "C10", "table_id": "T2", "base_price": 200, "tip": 40, "amount": 240, "reason": "finished_eating"}
+  tick 10020 no_dish          {}
+  tick 10800 quan_end         {"reason": "time", "money": 1008, "earned": 1008, "shift_earned": 1008, "reputation": 5}
+end = {"type": "end", "ticks": 10800, "sim_tick": 10800, "mode": "quan", "state": "finished", "reason": "time", "money": 1008, "earned": 1008, "reputation": 5, "score": 1508}
+PASS khách ngồi nhiều bàn: ['T1', 'T2']
+PASS món khách gọi thuộc menu 6 món
+PASS có khách gọi món mới: ['ca_keo_nuong', 'canh_chua_ca_loc', 'lau_mam']
+PASS mọi cook_started có items/base_price khớp menu
+PASS money = earned = tổng paid (1008)
+PASS score = earned + 100*floor(rep)
+PASS kết ca quan_end, reason time
+== 3. Hai bếp nấu song song (2 khách chờ sẵn ở T1, T2) ==
+$ python3 -m chonoi.headless --mode quan --seed 1 --scenario hai-bep.json --inputs hai-bep-inputs.json --ticks 60 --out hai-bep.jsonl -> 0 
+PASS exit 0
+  tick 11 cook_started {"stove_id": "B1", "order_id": "C1", "dish_id": "ca_loc_nuong_trui", "items": ["ca_loc"], "base_price": 60}
+  tick 41 cook_started {"stove_id": "B2", "order_id": "C2", "dish_id": "ca_keo_nuong", "items": ["ca_keo", "ca_keo"], "base_price": 70}
+PASS B1 nấu đơn C1, B2 nấu đơn C2 (đơn reserved cũ nhất theo order_tick rồi id bàn)
+PASS hai bếp cùng đang nấu
+KẾT QUẢ: TẤT CẢ ĐẠT
