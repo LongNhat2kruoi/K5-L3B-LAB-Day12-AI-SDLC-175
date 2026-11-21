@@ -9,9 +9,9 @@ from chonoi.ids import IdAllocator
 from chonoi.inputs import InputState
 from chonoi.rng import Streams
 from chonoi.sim.quan import QuanSim
-from helpers import Workdir, events, read_jsonl, run_headless, write_json
+from helpers import Workdir, events, read_jsonl, run_headless, stock_items, write_json
 
-BIG = {k: 20 for k in ("ca_loc", "bong_sung", "ca_linh", "bong_dien_dien", "ca_keo", "keo_neo")}
+BIG = stock_items({k: 12 for k in ("ca_loc", "bong_sung", "ca_linh", "bong_dien_dien", "ca_keo", "keo_neo")})
 IDLE = InputState((0.0, 0.0), {}, set())
 PRESS = InputState((0.0, 0.0), {}, {"interact"})
 
@@ -108,7 +108,7 @@ class Stoves(unittest.TestCase):
 
 class PlanFilter(unittest.TestCase):
     def test_ke_hoach_chi_ca_keo_kho_chi_du_goi_thi_no_dish(self):
-        sim = make({"stock": {"bong_sung": 2}}, plan={"ca_keo_nuong"})
+        sim = make({"stock": stock_items({"bong_sung": 2})}, plan={"ca_keo_nuong"})
         self.assertEqual(collect(sim, 120), [(120, "no_dish", {})])
         self.assertEqual(sim.customers, [])
 
@@ -124,7 +124,7 @@ class PlanFilter(unittest.TestCase):
     def test_ke_hoach_loc_truoc_roi_moi_loc_kho(self):
         # kho chỉ đủ gỏi + cá kéo; kế hoạch có gỏi và lẩu mắm (thiếu kho) -> luôn gỏi
         for seed in range(1, 6):
-            sim = make({"stock": {"bong_sung": 2, "ca_keo": 2}}, seed=seed, plan={"goi_bong_sung", "lau_mam"})
+            sim = make({"stock": stock_items({"bong_sung": 2, "ca_keo": 2})}, seed=seed, plan={"goi_bong_sung", "lau_mam"})
             self.assertEqual([d["dish_id"] for _, n, d in collect(sim, 130)], ["goi_bong_sung"])
 
     def test_khong_ke_hoach_dung_ca_6_mon(self):
@@ -142,21 +142,22 @@ class PlanFilter(unittest.TestCase):
 
 
 class NewDish(unittest.TestCase):
-    def test_lau_mam_720_tick_gia_200_boa_40(self):
-        stock = {"bong_dien_dien": 1, "ca_keo": 1, "ca_linh": 2, "keo_neo": 1}
+    def test_lau_mam_720_tick_gia_199_boa_39(self):
+        stock = stock_items({"bong_dien_dien": 1, "ca_keo": 1, "ca_linh": 2, "keo_neo": 1})
         sim = make({"stock": stock, "random_customers": False, "player": {"pos": [2.0, 8.0]},
                     "customers": [cust(dish="lau_mam")]})
         evs = sim.step(PRESS)
         self.assertEqual(evs[0][0], "cook_started")
-        self.assertEqual(evs[0][1]["base_price"], 200)
+        # v1.2: giá chốt theo độ tươi lúc nấu: floor(200 * (100 - 1/240) / 100) = 199, boa floor(199 * 0.2) = 39
+        self.assertEqual(evs[0][1]["base_price"], 199)
         self.assertEqual(sim.stoves[0]["cook_ticks_left"], 720)
-        self.assertEqual(sim.stock, {})
+        self.assertEqual(sim.stock, [])
         ready = [t for t, n, _ in collect(sim, 720) if n == "dish_ready"]
         self.assertEqual(ready, [721])
         sim.step(PRESS)  # lấy món
         sim.pos = [9.0, 2.0]
         evs = sim.step(PRESS)
-        self.assertEqual([(n, d["base_price"], d["tip"]) for n, d in evs], [("served", 200, 40)])
+        self.assertEqual([(n, d["base_price"], d["tip"]) for n, d in evs], [("served", 199, 39)])
 
 
 if __name__ == "__main__":
