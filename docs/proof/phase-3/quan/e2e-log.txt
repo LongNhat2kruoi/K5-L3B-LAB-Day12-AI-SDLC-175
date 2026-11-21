@@ -1,0 +1,68 @@
+# commit: 66b738c — chạy: python3 docs/proof/phase-3/quan/e2e_quan_v12.py <thư-mục-tạm>
+contract repo: 1.0 | e2e dùng tuning + freshness {'initial': 100, 'gather_decay_per_s': 0.5, 'quan_decay_per_s': 0.25, 'spoiled_below': 30}
+== 1. File kho v1.2: ghi -> đọc giữ id, kind, fresh và nhánh ngưỡng 30 ==
+file: {"items": [{"id": "I1", "kind": "bong_sung", "fresh": 97.5}, {"id": "I2", "kind": "ca_loc", "fresh": 30.0}, {"id": "I3", "kind": "ca_linh", "fresh": 30.004166666666666}, {"id": "I10", "kind": "ca_linh", "fresh": 29.995833333333334}]}
+PASS file xuất theo id (I2 trước I10)
+PASS đọc lại đúng từng giá trị (chính xác tuyệt đối)
+PASS nhánh ngưỡng 30 giữ nguyên
+== 2. Chọn schema theo phiên bản ==
+PASS v1.2 từ chối kho đếm (contract v1.2: kho quán phải là mảng cá thể, không nhận kho đếm)
+PASS schema đếm từ chối kho cá thể (contract v1.1: kho quán phải là object đếm, không nhận mảng cá thể)
+== 3. Ngưỡng ươn: fresh 30 -> spoiled ở tick 1; 7201/240 -> tick 2 ==
+spoiled: [(1, {'item_id': 'I1', 'kind': 'ca_linh', 'location': 'stock'}), (2, {'item_id': 'I2', 'kind': 'ca_linh', 'location': 'stock'})]
+PASS spoiled đúng tick, đúng một lần mỗi cá thể
+stock tick 5: [{'id': 'I1', 'kind': 'ca_linh', 'fresh': 29.979}, {'id': 'I2', 'kind': 'ca_linh', 'fresh': 29.983}]
+== 4. Giữ chỗ vừa ươn -> nhả và giữ lại; giá theo tươi ==
+   (1, 'spoiled', {'item_id': 'I1', 'kind': 'ca_loc', 'location': 'stock'})
+   (6, 'cook_started', {'stove_id': 'B1', 'order_id': 'C1', 'dish_id': 'ca_loc_nuong_trui', 'items': [{'id': 'I2', 'kind': 'ca_loc', 'fresh': 79.975}], 'base_price': 47})
+PASS tick 1: I1 ươn -> C1 giữ lại I2
+cook_started: {'stove_id': 'B1', 'order_id': 'C1', 'dish_id': 'ca_loc_nuong_trui', 'items': [{'id': 'I2', 'kind': 'ca_loc', 'fresh': 79.975}], 'base_price': 47} | giá kỳ vọng 47
+PASS nấu tiêu đúng id giữ, giá = floor(60 × fresh/100)
+== 5. Ca quán 10800 tick bằng bot, kho cá thể độ tươi lẫn lộn; tất định ==
+PASS cùng seed + input + kho -> JSONL giống từng byte
+  tick   120 customer_arrived {"order_id": "C1", "table_id": "T1", "dish_id": "ca_keo_nuong"}
+  tick   171 cook_started     {"stove_id": "B2", "order_id": "C1", "dish_id": "ca_keo_nuong", "items": [{"id": "I18", "kind": "ca_keo", "fresh": 99.287}, {"id": "I22", "kind": "ca_keo", "fresh": 99.287}], "base_price": 69}
+  tick   614 served           {"order_id": "C1", "table_id": "T1", "dish_id": "ca_keo_nuong", "patience_ticks_left": 3106, "base_price": 69, "tip": 13}
+  tick  1020 customer_arrived {"order_id": "C2", "table_id": "T2", "dish_id": "ca_loc_nuong_trui"}
+  tick  1102 cook_started     {"stove_id": "B2", "order_id": "C2", "dish_id": "ca_loc_nuong_trui", "items": [{"id": "I1", "kind": "ca_loc", "fresh": 95.408}], "base_price": 57}
+  tick  1214 paid             {"order_id": "C1", "table_id": "T1", "base_price": 69, "tip": 13, "amount": 82, "reason": "finished_eating"}
+  tick  1588 served           {"order_id": "C2", "table_id": "T2", "dish_id": "ca_loc_nuong_trui", "patience_ticks_left": 3032, "base_price": 57, "tip": 11}
+  tick  1920 customer_arrived {"order_id": "C3", "table_id": "T1", "dish_id": "canh_chua_ca_loc"}
+  tick  2044 cook_started     {"stove_id": "B2", "order_id": "C3", "dish_id": "canh_chua_ca_loc", "items": [{"id": "I10", "kind": "bong_dien_dien", "fresh": 91.483}, {"id": "I2", "kind": "ca_loc", "fresh": 76.483}], "base_price": 75}
+  tick  2188 paid             {"order_id": "C2", "table_id": "T2", "base_price": 57, "tip": 11, "amount": 68, "reason": "finished_eating"}
+  tick  2608 served           {"order_id": "C3", "table_id": "T1", "dish_id": "canh_chua_ca_loc", "patience_ticks_left": 2912, "base_price": 75, "tip": 15}
+  tick  2820 customer_arrived {"order_id": "C4", "table_id": "T2", "dish_id": "canh_chua_ca_loc"}
+  tick  2902 cook_started     {"stove_id": "B2", "order_id": "C4", "dish_id": "canh_chua_ca_loc", "items": [{"id": "I11", "kind": "bong_dien_dien", "fresh": 72.908}, {"id": "I3", "kind": "ca_loc", "fresh": 57.908}], "base_price": 58}
+  tick  3208 paid             {"order_id": "C3", "table_id": "T1", "base_price": 75, "tip": 15, "amount": 90, "reason": "finished_eating"}
+  tick  3509 served           {"order_id": "C4", "table_id": "T2", "dish_id": "canh_chua_ca_loc", "patience_ticks_left": 2911, "base_price": 58, "tip": 11}
+  tick  3720 customer_arrived {"order_id": "C5", "table_id": "T1", "dish_id": "ca_keo_nuong"}
+  tick  3844 cook_started     {"stove_id": "B2", "order_id": "C5", "dish_id": "ca_keo_nuong", "items": [{"id": "I19", "kind": "ca_keo", "fresh": 68.983}, {"id": "I20", "kind": "ca_keo", "fresh": 53.983}], "base_price": 43}
+  tick  4109 paid             {"order_id": "C4", "table_id": "T2", "base_price": 58, "tip": 11, "amount": 69, "reason": "finished_eating"}
+  tick  4288 served           {"order_id": "C5", "table_id": "T1", "dish_id": "ca_keo_nuong", "patience_ticks_left": 3032, "base_price": 43, "tip": 8}
+  tick  4620 customer_arrived {"order_id": "C6", "table_id": "T2", "dish_id": "goi_bong_sung"}
+  tick  4702 cook_started     {"stove_id": "B2", "order_id": "C6", "dish_id": "goi_bong_sung", "items": [{"id": "I14", "kind": "bong_sung", "fresh": 80.408}, {"id": "I15", "kind": "bong_sung", "fresh": 65.408}], "base_price": 29}
+  tick  4888 paid             {"order_id": "C5", "table_id": "T1", "base_price": 43, "tip": 8, "amount": 51, "reason": "finished_eating"}
+  tick  5068 served           {"order_id": "C6", "table_id": "T2", "dish_id": "goi_bong_sung", "patience_ticks_left": 3152, "base_price": 29, "tip": 5}
+  tick  5520 customer_arrived {"order_id": "C7", "table_id": "T1", "dish_id": "goi_bong_sung"}
+  tick  5644 cook_started     {"stove_id": "B2", "order_id": "C7", "dish_id": "goi_bong_sung", "items": [{"id": "I16", "kind": "bong_sung", "fresh": 46.483}, {"id": "I17", "kind": "bong_sung", "fresh": 31.483}], "base_price": 15}
+  tick  5668 paid             {"order_id": "C6", "table_id": "T2", "base_price": 29, "tip": 5, "amount": 34, "reason": "finished_eating"}
+  tick  5968 served           {"order_id": "C7", "table_id": "T1", "dish_id": "goi_bong_sung", "patience_ticks_left": 3152, "base_price": 15, "tip": 3}
+  tick  6001 spoiled          {"item_id": "I4", "kind": "ca_loc", "location": "stock"}
+  tick  6001 spoiled          {"item_id": "I8", "kind": "ca_linh", "location": "stock"}
+  tick  6001 spoiled          {"item_id": "I13", "kind": "bong_dien_dien", "location": "stock"}
+  tick  6001 spoiled          {"item_id": "I21", "kind": "ca_keo", "location": "stock"}
+  tick  6420 customer_arrived {"order_id": "C8", "table_id": "T2", "dish_id": "lau_ca_linh_dien_dien"}
+  tick  6502 cook_started     {"stove_id": "B2", "order_id": "C8", "dish_id": "lau_ca_linh_dien_dien", "items": [{"id": "I12", "kind": "bong_dien_dien", "fresh": 42.908}, {"id": "I5", "kind": "ca_linh", "fresh": 72.908}, {"id": "I6", "kind": "ca_linh", "fresh": 57.908}, {"id": "I9", "kind": "ca_linh", "fresh": 72.908}], "base_price": 73}
+  tick  6568 paid             {"order_id": "C7", "table_id": "T1", "base_price": 15, "tip": 3, "amount": 18, "reason": "finished_eating"}
+  tick  7227 served           {"order_id": "C8", "table_id": "T2", "dish_id": "lau_ca_linh_dien_dien", "patience_ticks_left": 2793, "base_price": 73, "tip": 14}
+  tick  7320 no_dish          {}
+  tick  7827 paid             {"order_id": "C8", "table_id": "T2", "base_price": 73, "tip": 14, "amount": 87, "reason": "finished_eating"}
+  tick  8220 no_dish          {}
+  tick  9120 no_dish          {}
+  tick  9601 spoiled          {"item_id": "I7", "kind": "ca_linh", "location": "stock"}
+  tick 10020 no_dish          {}
+  tick 10800 quan_end         {"reason": "time", "money": 499, "earned": 499, "shift_earned": 499, "reputation": 4.6}
+PASS mọi cook_started: giá = floor(giá × tươi TB/100), items sắp kind rồi id
+PASS earned = tổng paid (499), score = earned + 100×floor(rep) (899)
+PASS snapshot stock là mảng cá thể {id,kind,fresh}
+KẾT QUẢ: TẤT CẢ ĐẠT
