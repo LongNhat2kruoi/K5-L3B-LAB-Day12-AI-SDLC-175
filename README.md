@@ -43,6 +43,19 @@ Ngoài phần đề yêu cầu, nhóm được **thêm** nhân vật, loài cá/
 - Extension `day` chuyển từ buổi sáng sang buổi tối trong cùng một session.
 - Asset và giấy phép được liệt kê trong [`CREDITS.md`](CREDITS.md); bằng chứng day ở [`docs/proof/day-mode.md`](docs/proof/day-mode.md).
 
+### Phase 4 / Release v1.0.0
+
+Contract hiện tại là v1.3: gameplay, tuning, kho và JSONL dùng schema v1.2; Phase 4 bổ sung benchmark, soak và leaderboard.
+
+```bash
+python3 -m chonoi.benchmark --seed 42 --duration 30 --out bench.json
+python3 -m chonoi.soak --seed 7 --days 10 --out soak.json
+python3 -m chonoi.headless --mode day --seed 42 --ticks 21602 --days 5 --leaderboard leaderboard.json --player-name "Út Sen" --out day.jsonl
+python3 -m chonoi.headless --export-leaderboard leaderboard.json --leaderboard leaderboard.json
+```
+
+Ba cảnh báo UI có chữ/icon: thủy quái gần, oxy sắp hết và khách sắp giận. Bấm `C` hoặc nút “Tương phản cao” để bật chế độ dễ đọc. Bằng chứng Phase 4 ở [`docs/verification/phase-4.md`](docs/verification/phase-4.md).
+
 ## Lịch 3 giờ
 
 | Mốc | Phase | Hạn tag |

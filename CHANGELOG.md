@@ -1,6 +1,12 @@
 # Changelog
 ## Unreleased
 
+### Phase 4 / Contract v1.3
+- Thêm `chonoi.benchmark` và `chonoi.soak`, khai báo `bench_cmd`/`soak_cmd` ở contract root và artifact Phase 4.
+- Thêm leaderboard top-10 bền vững, export JSON và ghi đúng một lượt chuẩn 5 ngày.
+- Thêm cảnh báo có chữ/icon cho thủy quái, oxy, khách sắp giận và chế độ tương phản cao ở client.
+- Cập nhật verification, phản tư thành viên và release checklist; regression P1–P3 phải xanh trước khi gắn tag.
+
 ### Current integration
 - Hoàn thiện extension `day`: một session chạy gather rồi quan, chuyển inventory trong bộ nhớ và cập nhật HUD/live phase.
 - Đồng bộ bản chơi trình duyệt, pixel-art, day plan và contract adapter từ `origin/main`.

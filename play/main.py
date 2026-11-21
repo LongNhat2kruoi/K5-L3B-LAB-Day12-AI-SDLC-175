@@ -113,6 +113,7 @@ class Game:
     # ------------------------------------------------------------------ vòng đời
     def to_menu(self):
         self.scene, self.sess, self.error, self.help, self.paused = "menu", None, None, None, False
+        self.high_contrast = getattr(self, "high_contrast", False)
         self.menu_i = 0
         self.toasts = []
         self.facing, self.dir = 1, "down"
@@ -197,6 +198,9 @@ class Game:
         return self.earned + 100 * math.floor(self.rep + 1e-9)
 
     def update(self):
+        if pyxel.btnp(pyxel.KEY_C):
+            self.high_contrast = not getattr(self, "high_contrast", False)
+            self.toast("Tương phản cao: " + ("BẬT" if self.high_contrast else "TẮT"))
         if self.help:
             if pyxel.btnp(pyxel.KEY_X) or pyxel.btnp(pyxel.KEY_RETURN) or pyxel.btnp(pyxel.KEY_H):
                 self.help = None
@@ -474,6 +478,24 @@ class Game:
             self.draw_help()
         if self.paused:
             self.draw_pause()
+        if getattr(self, "high_contrast", False):
+            self.draw_accessibility_warnings()
+
+    def draw_accessibility_warnings(self):
+        """Always pair alert color with a readable text/icon in high-contrast mode."""
+        if not getattr(self, "snap", None):
+            return
+        alerts = []
+        p = self.snap.get("player", {})
+        if p.get("oxygen_max_ticks") and p.get("oxygen_ticks", p["oxygen_max_ticks"]) <= p["oxygen_max_ticks"] * 0.25:
+            alerts.append("⚠ OXY SẮP HẾT — NỔI LÊN")
+        if self.scene == "quan" and any(c.get("patience_ticks_left", 10**9) < 15 * 60 for c in self.snap.get("customers", [])):
+            alerts.append("⚠ KHÁCH SẮP GIẬN")
+        if self.scene == "gather" and any(f.get("pos") and p.get("pos") and math.dist(f["pos"], p["pos"]) < 4 for f in self.snap.get("fish", [])):
+            alerts.append("⚠ THỦY QUÁI GẦN")
+        for i, msg in enumerate(alerts):
+            self.panel(4, 18 + i * 14, self.font.text_width(msg) + 10, 13)
+            self.text(8, 19 + i * 14, msg, LANTERN, shadow=False)
 
     # ------------------------------------------------------------------ màn đầu/cuối
     # cảnh dưới sông cho màn chờ: (x, pha, tốc độ, loại) — cố định để mỗi lần mở đều giống nhau

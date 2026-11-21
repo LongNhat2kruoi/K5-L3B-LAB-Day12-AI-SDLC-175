@@ -117,7 +117,7 @@ def _validate_gather(b, tuning):
         raise BadInput("random_fish phải là boolean")
     if "hold" in b:
         h = b["hold"]
-        if fresh.enabled(tuning):
+        if fresh.enabled(tuning) and not tuning.get("_legacy_compat"):
             h = validate_item_list(h)
         elif not isinstance(h, list) or any(k not in KINDS for k in h):
             raise BadInput("hold phải là mảng id nguyên liệu hợp lệ")
@@ -173,7 +173,7 @@ def _validate_quan(b, tuning):
         if arr in b:
             _check_ids(arr, b[arr])
     if "stock" in b:
-        if fresh.enabled(tuning):
+        if fresh.enabled(tuning) and not tuning.get("_legacy_compat"):
             validate_item_list(b["stock"])
         else:
             validate_items(b["stock"])
@@ -225,7 +225,7 @@ def _validate_quan(b, tuning):
     pmax = int(round(q["patience_s"] * 60))
     emax = int(round(q["eat_s"] * 60))
     for c in b.get("customers", []):
-        _validate_customer(c, menu, pmax, emax, fresh.enabled(tuning))
+        _validate_customer(c, menu, pmax, emax, fresh.enabled(tuning) and not tuning.get("_legacy_compat"))
 
 
 def _payload(name, v, menu):

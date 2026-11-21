@@ -26,6 +26,8 @@ Nhóm được dùng **bất kỳ ngôn ngữ/engine nào**. Thứ duy nhất b�
 
 `chonoi/` là một khung **Python 3** (chỉ thư viện chuẩn) giảng viên làm sẵn để tiết kiệm thời gian: đọc tham số, đọc inputs/scenario/kho, kiểm lỗi (mã thoát 2), vòng tick 60 Hz, RNG có seed, cấp/sắp id, ghi JSONL tất định, ghi file kho an toàn. **Luật chơi do nhóm viết** (tìm `TODO(nhóm)`). Dùng hay không tùy nhóm.
 
+Phase 4 khai báo thêm `bench_cmd` và `soak_cmd` ở gốc `game.contract.json`. Benchmark nhận `--seed --duration --out`; soak nhận `--seed --days --out`; cả hai ghi JSON object riêng, không trộn vào JSONL gameplay.
+
 | Khung Python đã có | Nhóm viết |
 |---|---|
 | CLI + kiểm lỗi, mã thoát 0/1/2 | `chonoi/sim/gather.py`: oxy, ngạt, Máu, ngất, hái nút, bắt cá, giỏ (LIFO) |

@@ -23,6 +23,7 @@ Các tính năng của phase sau chưa nằm trong khung này.
 import math
 
 from ..ids import sort_by_id
+from .. import fresh
 from ..inventory import hold_to_items
 from .ramp import ramp_velocity
 
@@ -37,6 +38,8 @@ class GatherSim:
     def __init__(self, tuning, scenario, streams, ids):
         t = tuning["gather"]
         self.t = t
+        self.v12 = fresh.enabled(tuning)
+        self.initial_fresh = fresh.parse(tuning["freshness"]["initial"]) if self.v12 else None
         self.rng = streams
         self.ids = ids
         p = scenario.get("player", {})
@@ -77,6 +80,10 @@ class GatherSim:
 
     # --- giao diện cho runner -------------------------------------------------
     def inventory_items(self) -> dict:
+        if self.v12:
+            return [{"id": f"G{i}", "kind": kind,
+                     "fresh": fresh.to_json(self.initial_fresh)}
+                    for i, kind in enumerate(self.hold, 1)]
         return hold_to_items(self.hold)
 
     def snapshot(self) -> dict:

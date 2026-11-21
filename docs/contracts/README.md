@@ -15,3 +15,7 @@ Khi đổi hợp đồng sau này: báo cả nhóm và ghi lại lý do (ADR ho�
 runner khởi tạo `quan` bằng inventory trong giỏ và phát event `phase_changed`.
 Chế độ này không nhận `--inventory` hoặc `--inventory-out`; file kho chỉ dùng cho
 hai lệnh độc lập `gather` và `quan` của contract v1.0.
+
+## Phase 4 / Contract v1.3
+
+`game.contract.json` declares `contract_version: "1.3"`. Gameplay tuning, inventory and JSONL keep the v1.2 item/freshness schema. The root also declares `bench_cmd`, `soak_cmd` and a top-10 leaderboard extension. Benchmark and soak output is standalone JSON and never changes gameplay JSONL.

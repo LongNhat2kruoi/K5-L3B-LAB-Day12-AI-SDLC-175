@@ -25,8 +25,23 @@ def load_contract(path=DEFAULT_PATH) -> dict:
     except (OSError, ValueError) as e:
         raise BadInput(f"không đọc được {path}: {e}")
     validate_tuning(c.get("tuning"))
-    if (c.get("contract_version") == "1.2") != ("freshness" in c["tuning"]):
-        raise BadInput("contract_version 1.2 khi và chỉ khi tuning có khối freshness")
+    version = c.get("contract_version")
+    if version not in ("1.0", "1.2", "1.3"):
+        raise BadInput("contract_version phải là 1.0, 1.2 hoặc 1.3")
+    if (version in ("1.2", "1.3")) != ("freshness" in c["tuning"]):
+        raise BadInput("contract_version 1.2/1.3 khi và chỉ khi tuning có khối freshness")
+    if version == "1.3":
+        for key in ("bench_cmd", "soak_cmd"):
+            if not isinstance(c.get(key), str) or not c[key].strip():
+                raise BadInput(f"contract v1.3 cần {key}")
+        ext = c.get("extensions")
+        lb = ext.get("leaderboard") if isinstance(ext, dict) else None
+        if not isinstance(lb, dict) or lb.get("max_entries") != 10 or lb.get("standard_days") != 5:
+            raise BadInput("contract v1.3 cần extensions.leaderboard top-10/5 ngày")
+        # P1/P2 fixtures remain loadable during the migration; v1.3 output is still item-based.
+        c["tuning"]["_legacy_compat"] = True
+        c["tuning"]["gather"]["_legacy_compat"] = True
+        c["tuning"]["quan"]["_legacy_compat"] = True
     return c
 
 
@@ -160,3 +175,8 @@ def validate_tuning(t):
         price, cook = d.get("price"), d.get("cook_s")
         if isinstance(price, bool) or not isinstance(price, int) or price <= 0 or not _num(cook) or cook <= 0:
             raise BadInput(f"menu.{dish_id}: price (nguyên) và cook_s phải > 0")
+
+
+if __name__ == "__main__":
+    contract = load_contract()
+    print(contract["contract_version"])

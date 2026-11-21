@@ -16,3 +16,5 @@
 - Python 3 và thư viện chuẩn.
 - GitHub Actions cho CI.
 - Claude Code/AI coding agents được ghi lại trong `docs/ai-usage-log.md`.
+
+Mã nguồn và asset tự tạo của nhóm được phát hành theo [MIT License](LICENSE). Ark Pixel Font giữ SIL OFL 1.1 theo file license đi kèm; `quetoi.mp3` chưa được coi là cleared cho phát hành công khai.

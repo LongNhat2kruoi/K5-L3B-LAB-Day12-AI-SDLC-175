@@ -78,8 +78,9 @@ class Session:
                 for name, data in events]
         if self.mode == "day" and self.phase == "gather" and self.sim.done:
             inventory = self.sim.inventory_items()
+            day_plan = self.tuning.get("day_plan", [{}])[0].get("dishes")
             self.sim = QuanSim(self.tuning, self._scenario.get("quan", {}), self._streams, self._ids,
-                               inventory=inventory)
+                               inventory=inventory, plan_dishes=day_plan)
             self.phase = "quan"
             self.phase_tick = 0
             rows.append({"type": "event", "tick": self.tick, "phase": "quan", "name": "phase_changed",

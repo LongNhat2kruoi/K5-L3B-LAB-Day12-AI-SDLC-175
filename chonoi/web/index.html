@@ -7,9 +7,11 @@
 <style>
   html, body { margin: 0; height: 100%; background: #10161c; color: #e8eef2; font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
   canvas { display: block; width: 100vw; height: 100vh; }
+  #a11y { position: fixed; z-index: 2; right: 8px; top: 8px; padding: 6px 10px; color: #fff; background: #000; border: 2px solid #fff; cursor: pointer; }
 </style>
 </head>
 <body>
+<button id="a11y" type="button" aria-pressed="false">Tương phản cao (C)</button>
 <canvas id="c"></canvas>
 <script>
 "use strict";
@@ -20,7 +22,10 @@
  */
 const cv = document.getElementById("c");
 const ctx = cv.getContext("2d");
-let snap = null, offline = false;
+let snap = null, offline = false, highContrast = false;
+const a11y = document.getElementById("a11y");
+function toggleContrast() { highContrast = !highContrast; a11y.setAttribute("aria-pressed", String(highContrast)); }
+a11y.addEventListener("click", toggleContrast);
 
 // ---------- vào: phím ----------
 const down = new Set();
@@ -59,6 +64,7 @@ addEventListener("keydown", (e) => {
   else if (k === "e") down.add("interact");
   else if (k === " ") { down.add("catch"); e.preventDefault(); }
   else if (k === "r") { fetch("/restart", { method: "POST" }); lastSent = ""; down.clear(); }
+  else if (k === "c") toggleContrast();
   pushInput();
 });
 addEventListener("keyup", (e) => {
@@ -120,6 +126,16 @@ function eventLog(w, h) {
 function overlay(w, h) {
   if (offline) text("Mất kết nối tới máy chủ (đã tắt chưa?)", w / 2, 30, { align: "center", color: "#ff8a80", size: 16 });
   if (snap.error) text("Luật của nhóm báo lỗi — xem terminal. R để chơi lại.", w / 2, 52, { align: "center", color: "#ff8a80", size: 15 });
+  const p = snap.player || {};
+  const warnings = [];
+  if (p.oxygen_ticks !== undefined && p.oxygen_max_ticks && p.oxygen_ticks <= p.oxygen_max_ticks * 0.25) warnings.push("⚠ OXY SẮP HẾT — NỔI LÊN");
+  if ((snap.fish || []).some((f) => f.pos && p.pos && Math.hypot(f.pos[0] - p.pos[0], f.pos[1] - p.pos[1]) < 4)) warnings.push("⚠ THỦY QUÁI GẦN");
+  if ((snap.customers || []).some((c) => c.patience_ticks_left !== undefined && c.patience_ticks_left < 15 * 60)) warnings.push("⚠ KHÁCH SẮP GIẬN");
+  if (warnings.length) {
+    ctx.fillStyle = highContrast ? "#000" : "rgba(0,0,0,.72)";
+    ctx.fillRect(8, 70, Math.min(w - 16, 330), warnings.length * 24 + 10);
+    warnings.forEach((v, i) => text(v, 16, 94 + i * 24, { size: 15, color: highContrast ? "#ffff00" : "#ffef66" }));
+  }
   if (snap.finished) {
     ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(w / 2 - 190, h / 2 - 50, 380, 100);
     text("Buổi " + ((snap.phase || snap.mode) === "gather" ? "sáng" : "tối") + " kết thúc: " + (snap.reason || ""), w / 2, h / 2 - 12, { align: "center", size: 20 });

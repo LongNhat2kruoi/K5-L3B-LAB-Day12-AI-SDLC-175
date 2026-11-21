@@ -23,3 +23,11 @@
 - Kiểm thử hiện tại: 180 test pass sau khi đồng bộ `origin/main`.
 - AI cần được review bằng test và diff; các lỗi trước đây gồm payload bếp hiển thị sai và validator thiếu trường fixture.
 - Nếu làm lại, nhóm sẽ chốt contract kho và phân công Integrator ngay trong 15 phút đầu.
+
+## Mở đầu retro Phase 4
+
+- Rà lại hành động P2: nhóm đã chốt `day_plan`, giữ hook `plan_dishes` và lưu e2e theo phase; việc còn vướng là contract kho bị bật muộn hơn phần quán.
+- Điều làm tốt: v1.3 được tách thành lệnh benchmark/soak/leaderboard, không làm thay đổi JSONL gameplay; các cảnh báo UI có chữ/icon nên vẫn hiểu được khi tắt âm thanh.
+- Điều cần sửa: soak hiện chạy bot rỗng nên chưa đo được doanh thu thực tế; cần bot deterministic có gather/serve/shop nếu muốn đánh giá kinh tế nhiều ngày.
+- Hành động tiếp theo: hoàn thiện regression fixture v1.3, review artifact trên commit tag và chỉ phát hành sau khi cả 4 thành viên xác nhận.
+- Một lỗi AI: đề xuất ban đầu giả định Phase 4 đã có trong repo; nhóm xác minh bằng link, git history và văn bản ticket trước khi viết code.
