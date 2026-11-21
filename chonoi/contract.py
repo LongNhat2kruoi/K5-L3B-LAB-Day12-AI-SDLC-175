@@ -1,6 +1,7 @@
 """Đọc game.contract.json và kiểm dải hợp lệ của tuning P1 (PRD mục 13.2, Test Contract)."""
 
 import json
+import math
 import os
 
 from .errors import BadInput
@@ -33,6 +34,8 @@ def _validate_freshness(fr):
     keys = ("initial", "gather_decay_per_s", "quan_decay_per_s", "spoiled_below")
     if not isinstance(fr, dict) or set(fr) != set(keys) or not all(_num(fr[k]) for k in keys):
         raise BadInput(f"tuning.freshness phải có đúng 4 khóa số {list(keys)}")
+    if not all(math.isfinite(fr[k]) for k in keys):
+        raise BadInput("tuning.freshness phải gồm số hữu hạn")
     if fr["initial"] != 100:
         raise BadInput("tuning.freshness.initial phải bằng 100")
     if fr["gather_decay_per_s"] <= 0 or fr["quan_decay_per_s"] <= 0:

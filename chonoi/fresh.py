@@ -13,14 +13,14 @@ def enabled(tuning) -> bool:
 
 
 def parse(v) -> Fraction:
-    """Số JSON -> Fraction trong [0, 100], nắn về lưới 1/240 khi sai số < 1e-6."""
+    """Số JSON -> Fraction trong [0, 100], nắn về lưới 1/240 khi sai số < 1e-9 (đơn vị đã nhân 240)."""
     if isinstance(v, bool) or not isinstance(v, (int, float)):
         raise BadInput(f"fresh phải là số, đang là {v!r}")
     if isinstance(v, float) and not math.isfinite(v):
         raise BadInput(f"fresh phải hữu hạn, đang là {v!r}")
     f = Fraction(str(v))
     scaled = f * GRID
-    if abs(scaled - round(scaled)) < Fraction(1, 1_000_000):
+    if abs(scaled - round(scaled)) < Fraction(1, 1_000_000_000):
         f = Fraction(round(scaled), GRID)
     if not (0 <= f <= 100):
         raise BadInput(f"fresh phải trong [0, 100], đang là {v!r}")

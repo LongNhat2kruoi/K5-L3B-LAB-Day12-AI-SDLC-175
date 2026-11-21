@@ -113,6 +113,10 @@ class InventoryV12(unittest.TestCase):
             write_inventory(q, {"ca_loc": 2, "ca_linh": 0})
             self.assertEqual(read_inventory(q), {"ca_loc": 2})
 
+    def test_grid_snap_is_tight(self):
+        self.assertTrue(fresh.parse(29.999999999) < 30)  # không nắn qua ngưỡng 30
+        self.assertEqual(fresh.parse(7199 / 240), Fraction(7199, 240))
+
     def test_fresh_helpers(self):
         t = v12_tuning()
         self.assertTrue(fresh.enabled(t))
@@ -147,6 +151,15 @@ class ContractV12(unittest.TestCase):
     def test_rejects_freshness_with_old_version(self):
         with self.assertRaises(BadInput):
             self.load(lambda c: c["tuning"].update(freshness=dict(FRESHNESS)))
+
+    def test_rejects_non_finite_freshness(self):
+        for v in (float("nan"), float("inf"), float("-inf")):
+            for key in ("initial", "gather_decay_per_s", "quan_decay_per_s", "spoiled_below"):
+                def m(c, key=key, v=v):
+                    c["contract_version"] = "1.2"
+                    c["tuning"]["freshness"] = {**FRESHNESS, key: v}
+                with self.subTest(key=key, v=v), self.assertRaises(BadInput):
+                    self.load(m)
 
     def test_rejects_bad_freshness_block(self):
         for patch in ({"initial": 90}, {"gather_decay_per_s": 0}, {"quan_decay_per_s": -1},
