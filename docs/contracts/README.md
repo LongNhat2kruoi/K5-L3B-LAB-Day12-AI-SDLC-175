@@ -6,3 +6,10 @@
 3. **Danh sách sự kiện** — tên, `data`, ai phát, ai nghe (gather: `gather`, `node_regrown`, `hold_full`, `fish_caught`, `gather_end`...; quan: theo mục E của PRD-0).
 
 Khi đổi hợp đồng sau này: báo cả nhóm và ghi lại lý do (ADR hoặc ghi chú, tùy chọn).
+
+## Extension `day`
+
+`day` là một session liên tục gồm `gather` rồi `quan`. Khi `gather_end` xảy ra,
+runner khởi tạo `quan` bằng inventory trong giỏ và phát event `phase_changed`.
+Chế độ này không nhận `--inventory` hoặc `--inventory-out`; file kho chỉ dùng cho
+hai lệnh độc lập `gather` và `quan` của contract v1.0.

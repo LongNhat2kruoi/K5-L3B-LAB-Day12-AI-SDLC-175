@@ -2,6 +2,7 @@
 
 | # | Ngày giờ | Câu hỏi | Trả lời / giả định | Ai quyết |
 |---|---|---|---|---|
+| 1 | 2026-11-21 | Có thể chơi gather và quan trong cùng một màn không? | Có. Giữ nguyên hai mode độc lập để tương thích Test Contract; thêm extension `day` chuyển inventory trong bộ nhớ sau `gather_end`, không dùng file kho trung gian. | Tech Lead |
 | Q1 | P1 | `no_dish` có tạo khách không? | Không tạo khách, `data = {}` (PRD E: "{} khi có bàn mà thiếu món"). Giả định của nhóm, chưa hỏi Anh Năm. | TV3 (quán) |
 | Q2 | P1 | `stove.dish` là id món hay payload? | Payload `{order_id, dish_id, base_price}` giống `hand`, vì PRD D cấm "bếp và tay giữ cùng đơn" nên bếp phải biết `order_id`. | TV3 |
 | Q3 | P1 | Khách chưa chốt giá/boa thì `base_price`, `tip` là gì? | `null`. `base_price` chốt ở `cook_started`, `tip` chốt ở `served`. | TV3 |

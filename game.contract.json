@@ -3,7 +3,7 @@
   "team": "ten-nhom",
   "team_size": 4,
   "build_cmd": "true",
-  "run_cmd": "python3 -m chonoi.live --mode gather",
+  "run_cmd": "python3 -m chonoi.live --mode day",
   "headless_cmd": "python3 -m chonoi.headless",
   "tuning": {
     "tick_hz": 60,

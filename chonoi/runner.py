@@ -41,29 +41,55 @@ class Session:
     def __init__(self, mode, tuning, scenario, seed, inventory=None):
         self.mode = mode
         self.tuning = tuning
-        self.sim = build_sim(mode, tuning, scenario, seed, inventory)
+        self._scenario = scenario
+        self._streams = Streams(seed)
+        self._ids = IdAllocator()
         self.tick = 0
+        self.sim_tick = 0
+        self.phase_tick = 0
+        self.phase = mode
+        if mode == "day":
+            self.sim = GatherSim(tuning, scenario.get("gather", {}), self._streams, self._ids)
+            self.phase = "gather"
+        else:
+            self.sim = build_sim(mode, tuning, scenario, seed, inventory)
 
     @property
     def done(self) -> bool:
         return self.sim.done
 
     def snapshot(self) -> dict:
-        s = _common(self.sim, self.tick, self.tick, self.tick, self.tuning, "finished" if self.sim.done else "playing")
+        s = _common(self.sim, self.tick, self.sim_tick, self.phase_tick, self.tuning,
+                    "finished" if self.sim.done else "playing")
+        if self.mode == "day":
+            s["mode"] = "day"
+            s["phase"] = self.phase
         s.update(self.sim.snapshot())
         return s
 
     def step(self, inp) -> list:
         """Chạy một bước với `inp` (chonoi.inputs.InputState); trả các dòng event (tick = k + 1)."""
+        event_phase = self.phase
         events = self.sim.step(inp)
         self.tick += 1
-        return [{"type": "event", "tick": self.tick, "phase": self.sim.phase, "name": name, "data": data}
+        self.sim_tick += 1
+        self.phase_tick += 1
+        rows = [{"type": "event", "tick": self.tick, "phase": event_phase, "name": name, "data": data}
                 for name, data in events]
+        if self.mode == "day" and self.phase == "gather" and self.sim.done:
+            inventory = self.sim.inventory_items()
+            self.sim = QuanSim(self.tuning, self._scenario.get("quan", {}), self._streams, self._ids,
+                               inventory=inventory)
+            self.phase = "quan"
+            self.phase_tick = 0
+            rows.append({"type": "event", "tick": self.tick, "phase": "quan", "name": "phase_changed",
+                         "data": {"from": "gather", "to": "quan", "inventory": {"items": inventory}}})
+        return rows
 
     def end_row(self) -> dict:
         sim = self.sim
-        score = _common(sim, self.tick, self.tick, self.tick, self.tuning, "")["score"]
-        return {"type": "end", "ticks": self.tick, "sim_tick": self.tick, "mode": sim.mode,
+        score = _common(sim, self.tick, self.sim_tick, self.phase_tick, self.tuning, "")["score"]
+        return {"type": "end", "ticks": self.tick, "sim_tick": self.sim_tick, "mode": self.mode,
                 "state": "finished" if sim.done else "playing",
                 "reason": sim.reason if sim.done else "tick_limit",
                 "money": sim.money, "earned": sim.earned, "reputation": sim.reputation, "score": score}

@@ -49,7 +49,24 @@ def load_scenario(path, mode: str, tuning: dict) -> dict:
     except (OSError, ValueError) as e:
         raise BadInput(f"không đọc được scenario {path}: {e}")
     if not isinstance(data, dict) or not set(data) <= {"gather", "quan"}:
-        raise BadInput("scenario chỉ được có khối 'gather' hoặc 'quan'")
+        raise BadInput("scenario must contain only gather/quan blocks")
+    if mode == "day":
+        for phase in ("gather", "quan"):
+            block = data.get(phase, {})
+            if not isinstance(block, dict):
+                raise BadInput(f"{phase} scenario block must be an object")
+            dur = int(round(tuning[phase]["duration_s"] * 60))
+            if "time_left_ticks" in block:
+                t = block["time_left_ticks"]
+                if isinstance(t, bool) or not isinstance(t, int) or not (1 <= t <= dur):
+                    raise BadInput(f"{phase}.time_left_ticks must be an integer in [1, {dur}]")
+            if phase == "gather":
+                _validate_gather(block, tuning)
+            else:
+                if "stock" in block:
+                    raise BadInput("day.quan.stock is not allowed; stock comes from gather")
+                _validate_quan(block, tuning)
+        return data
     if set(data) - {mode}:
         raise BadInput(f"khối sai mode: chạy --mode {mode} chỉ nhận khối '{mode}'")
     block = data.get(mode, {})
