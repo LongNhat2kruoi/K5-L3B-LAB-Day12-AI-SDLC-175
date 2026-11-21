@@ -15,4 +15,4 @@ Lệnh kiểm tra:
 PYTHONPATH=tests:. python3 -m unittest discover -s tests -p 'test_gather*.py' -v
 ```
 
-Kết quả trên môi trường phát triển: 15 test pass. `py_compile` và kiểm tra whitespace cũng pass.
+Kết quả trên môi trường phát triển: 15 test riêng của gather pass; regression toàn repo hiện tại: 180 test pass. `py_compile` và kiểm tra whitespace cũng pass.

@@ -28,3 +28,9 @@ Luật cố định của PRD (số liệu, 3 món, 4 nguyên liệu, 1 bếp, 1
 
 - Phụ thuộc tên sự kiện và trường snapshot của vai 1, 2, 3: cần bảng sự kiện vai 4 chốt trước. Khi trường chưa có, giao diện tự bỏ qua (khung đã làm vậy).
 - Không thêm phím gửi vào mô phỏng; mọi điều khiển mới (bật/tắt âm thanh, mở sổ tay) xử lý hoàn toàn trong trình duyệt.
+
+## Trạng thái thực hiện
+
+- Đã có bản chơi `play/index.html`, sprite bơi/quán và HUD/menu/pause trong `play/main.py`.
+- Đã có extension `day` ở simulation; chuyển phase được kiểm chứng headless và live.
+- Các ý tưởng hội thoại, sổ tay, huy hiệu và âm thanh WebAudio vẫn là backlog UI; không được xem là tiêu chí headless đã hoàn thành.

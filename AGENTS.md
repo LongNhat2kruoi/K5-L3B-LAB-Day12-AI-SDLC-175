@@ -26,4 +26,6 @@
 - Sáng tạo thêm được khuyến khích nhưng phải tắt ở headless (xem README, mục "Tự do sáng tạo").
 
 ## Skills / hooks của nhóm
-- (Ghi tên và khi nào dùng; tối thiểu 2 skill/hook/command nhóm tự viết, đặt ở `.agents/skills/` hoặc tương đương.)
+- `python tools/check_team.py`: kiểm tra TEAM.md, handle và `team_size` trước khi merge.
+- `PYTHONPATH=tests:. python3 -m unittest discover -s tests -v`: gate bắt buộc trước commit/tag.
+- `python3 -m chonoi.headless --mode day --seed 1 --ticks 600 --out out.jsonl`: smoke kiểm tra session gather → quan.

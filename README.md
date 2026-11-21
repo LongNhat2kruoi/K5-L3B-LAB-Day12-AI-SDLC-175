@@ -31,11 +31,17 @@ PYTHONPATH=tests:. python3 -m unittest discover -s tests -v        # smoke test
 python3 -m chonoi.live --mode day                                    # chơi liền buổi sáng → buổi tối
 ```
 
-Game cần chế độ **headless** theo Test Contract (`python3 -m chonoi.headless --mode gather|quan …`) để được chạy và chấm tự động. **Công nghệ không ràng buộc**: khung Python trong `chonoi/` chỉ là gợi ý, chi tiết ở [`docs/STARTER.md`](docs/STARTER.md).
+Game cần chế độ **headless** theo Test Contract (`python3 -m chonoi.headless --mode gather|quan|day …`) để được chạy và chấm tự động. Bản `day` là extension chạy liền hai phase trong một session. **Công nghệ không ràng buộc**: khung Python trong `chonoi/` chỉ là gợi ý, chi tiết ở [`docs/STARTER.md`](docs/STARTER.md).
 
 ## Tự do sáng tạo
 
 Ngoài phần đề yêu cầu, nhóm được **thêm** nhân vật, loài cá/cây, sinh vật, món, bản đồ, cơ chế, câu chuyện, đồ họa, âm nhạc… với ba điều kiện: **không phá phần cố định** (tắt ở headless), ghi mục **"Sáng tạo của nhóm"** trong README của nhóm, và **làm lõi đúng trước**.
+
+### Sáng tạo của nhóm
+
+- Bản chơi trình duyệt `play/` có sprite pixel-art Út Sen, HUD, menu, pause và vòng chơi liên tục.
+- Extension `day` chuyển từ buổi sáng sang buổi tối trong cùng một session.
+- Asset và giấy phép được liệt kê trong [`CREDITS.md`](CREDITS.md); bằng chứng day ở [`docs/proof/day-mode.md`](docs/proof/day-mode.md).
 
 ## Lịch 3 giờ
 

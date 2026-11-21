@@ -7,7 +7,7 @@
 ```bash
 git clone <fork-của-nhóm> && cd <fork-của-nhóm>
 PYTHONPATH=tests:. python3 -m unittest discover -s tests -v     # smoke test (phải xanh; nếu dùng starter Python)
-python3 -m chonoi.headless --mode gather --seed 1 --ticks 600 --out out.jsonl
+python3 -m chonoi.headless --mode day --seed 1 --ticks 600 --out out.jsonl
 ```
 
 Hai chế độ độc lập của contract v1.0 là `gather` (buổi sáng: lặn và hái, nhìn ngang, vị trí `[x, d]`, `d` là độ sâu) và `quan` (buổi tối: mở quán, nhìn từ trên xuống, vị trí `[x, z]`). Extension `day` chạy cả hai phase trong cùng một session: inventory được chuyển trong bộ nhớ khi gather kết thúc.
@@ -18,7 +18,7 @@ Hai chế độ độc lập của contract v1.0 là `gather` (buổi sáng: l�
 python3 -m chonoi.live --mode day        # hoặc: --mode gather / --mode quan [--seed N] [--port 8000]
 ```
 
-Lệnh in một địa chỉ (mặc định `http://127.0.0.1:8000/`); mở nó bằng trình duyệt. Phím: **WASD / mũi tên** di chuyển, **E** (`interact`), **Space** (`catch`), **R** chơi lại. Cửa sổ chạy **cùng một lớp sim** với headless (60 tick/s) và chỉ **đọc snapshot**, nên nhóm viết luật tới đâu thì thanh oxy, Máu, giỏ, cá, nút hái... hiện tới đó (trường chưa có sẽ bị bỏ qua). Đây chỉ là hình khối tạm để thử luật; đồ họa thật do nhóm làm. Chơi `gather` rồi chuyển sang `quan`: thêm `--inventory-out kho.json` ở lệnh đầu và `--inventory kho.json` ở lệnh sau. File chỉ dùng thư viện chuẩn Python (`chonoi/live.py`, `chonoi/web/index.html`); đổi ngôn ngữ thì xóa hoặc thay bằng cửa sổ của nhóm.
+Lệnh in một địa chỉ (mặc định `http://127.0.0.1:8000/`); mở nó bằng trình duyệt. Phím: **WASD / mũi tên** di chuyển, **E** (`interact`), **Space** (`catch`), **R** chơi lại. Cửa sổ chạy **cùng một lớp sim** với headless (60 tick/s) và chỉ **đọc snapshot**. Với `day`, HUD và camera tự chuyển từ gather sang quan khi `gather_end`; inventory được truyền trong bộ nhớ. Hai mode độc lập vẫn có thể dùng `--inventory-out kho.json` và `--inventory kho.json` như contract v1.0. Bản chơi sáng tạo nằm ở `play/`; starter browser là `chonoi/live.py` và `chonoi/web/index.html`.
 
 ## Công nghệ: tự chọn (starter chỉ là gợi ý, KHÔNG bắt buộc)
 
@@ -36,7 +36,7 @@ Nhóm được dùng **bất kỳ ngôn ngữ/engine nào**. Thứ duy nhất b�
 | Cửa sổ thử trên trình duyệt (`python3 -m chonoi.live`) | Đồ họa, âm thanh, menu, HUD hoàn chỉnh theo PRD |
 
 ### Nếu nhóm đổi sang ngôn ngữ khác
-1. Sửa `build_cmd`, `run_cmd` (hiện là `python3 -m chonoi.live --mode gather`), `headless_cmd` trong `game.contract.json` cho ngôn ngữ của nhóm.
+1. Sửa `build_cmd`, `run_cmd` (hiện là `python3 -m chonoi.live --mode day`), `headless_cmd` trong `game.contract.json` cho ngôn ngữ của nhóm.
 2. Nếu nhóm dùng CI: sửa bước **Build** và **Test** trong `.github/workflows/ci.yml` (cài runtime cần thiết); không dùng CI thì xóa file đó.
 3. **Giữ** `tests/test_smoke_p1.py`: đây là test **hộp đen**, chỉ chạy `headless_cmd` rồi đọc JSONL/file kho, nên dùng nguyên cho mọi ngôn ngữ. **Xóa** `chonoi/`, `tests/test_python_starter_units.py` và `tests/test_live.py` nếu không dùng; viết unit test bằng ngôn ngữ của nhóm.
 4. Vẫn phải qua cùng Test Contract: cùng seed → output giống từng byte.

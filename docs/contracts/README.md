@@ -5,6 +5,8 @@
 2. **Giao diện giữa `sim/*` và `client/ui`** — trạng thái nào UI được đọc, lệnh nào UI gửi vào.
 3. **Danh sách sự kiện** — tên, `data`, ai phát, ai nghe (gather: `gather`, `node_regrown`, `hold_full`, `fish_caught`, `gather_end`...; quan: theo mục E của PRD-0).
 
+Các mode hiện có: `gather`, `quan` độc lập theo Contract v1.0; `day` là extension một session. Snapshot `day` giữ `mode: "day"`, dùng `phase: "gather" | "quan"`, và reset `phase_tick` về 0 khi phát `phase_changed`.
+
 Khi đổi hợp đồng sau này: báo cả nhóm và ghi lại lý do (ADR hoặc ghi chú, tùy chọn).
 
 ## Extension `day`

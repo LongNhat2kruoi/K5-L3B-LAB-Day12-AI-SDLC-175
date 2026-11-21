@@ -1,5 +1,7 @@
 # Ma trận truy vết Phase 1
 
+> Cập nhật sau integration: các AC bên dưới là bằng chứng lịch sử theo từng lát. Regression hiện tại của toàn repo gồm 180 test pass; bằng chứng extension `day` nằm ở [day-mode.md](../proof/day-mode.md).
+
 | AC | Cách kiểm chứng | Bằng chứng (link `docs/proof/phase-1/...`) | Kết quả (đạt / chưa đạt — ghi trung thực) |
 |---|---|---|---|
 | AC-P1-Q1 Fixture quán theo PRD D: mặc định khách, cấp `reserved`, mã 2 cho mâu thuẫn | `tests/test_quan_fixture.py` (27 ca, hộp đen qua headless) | [quan/unittest.txt](../proof/phase-1/quan/unittest.txt) | Đạt |
@@ -13,6 +15,11 @@
 
 Chạy lại e2e từ gốc repo: `python3 docs/proof/phase-1/quan/e2e_quan.py <thư-mục-tạm>`.
 
-## Đánh giá ngắn
+## Đánh giá ngắn (tại thời điểm Phase 1)
 - Yêu cầu nào đạt / chưa đạt: phần quán (lát 3 + 4) đạt toàn bộ các AC ở trên, 89 test xanh ở commit ghi trong `unittest.txt`. Phần gather (lát 1–2), HUD và tag `phase-1` thuộc thành viên khác, chưa kiểm ở đây.
 - Điều cần chỉnh cho phase sau: các giả định Q1–Q9 trong `docs/clarify.md` chưa được Anh Năm xác nhận; nên hỏi trước khi chốt tag. Trên Windows cần lệnh `python3` (hoặc đổi `headless_cmd`) và `PYTHONUTF8=1` để log test sạch.
+
+## Cập nhật tích hợp
+
+- Gather survival/resources và session `day` đã có test regression trong `tests/test_gather_rules.py`, `tests/test_gather_resources.py`, `tests/test_day_mode.py`.
+- Tag `phase-1` và trạng thái collaborator vẫn cần nhóm xác nhận trên GitHub; không tự đánh dấu đạt khi chưa có bằng chứng remote.

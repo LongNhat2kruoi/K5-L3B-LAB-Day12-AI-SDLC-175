@@ -1,5 +1,7 @@
 # Clarify — câu hỏi và câu trả lời (PO ghi, cả nhóm dùng chung)
 
+> Q12 và Q15 vẫn là quyết định mở có chủ đích: không tự chốt thay PO. Các thay đổi contract/freshness chỉ được thực hiện sau khi nhóm xác nhận và cập nhật ADR tương ứng.
+
 | # | Ngày giờ | Câu hỏi | Trả lời / giả định | Ai quyết |
 |---|---|---|---|---|
 | 1 | 2026-11-21 | Có thể chơi gather và quan trong cùng một màn không? | Có. Giữ nguyên hai mode độc lập để tương thích Test Contract; thêm extension `day` chuyển inventory trong bộ nhớ sau `gather_end`, không dùng file kho trung gian. | Tech Lead |

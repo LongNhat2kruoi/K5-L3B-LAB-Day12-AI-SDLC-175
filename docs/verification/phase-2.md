@@ -13,6 +13,10 @@
 
 Chạy lại e2e từ gốc repo: `python3 docs/proof/phase-2/quan/e2e_quan_v11.py <thư-mục-tạm>`.
 
-## Đánh giá ngắn
+## Đánh giá ngắn (tại thời điểm Phase 2)
 - Yêu cầu nào đạt / chưa đạt: lát 3 (quán 2 bếp/4 bàn, 6 món, kế hoạch ngày) đạt. Các lát khác (số chuẩn gather, cá bơi/sinh, Cá Sấu, `--mode day`, Shop, pause, HUD) thuộc thành viên khác, chưa có trong ma trận này. `contract_version` vẫn là "1.0": nhóm đổi sang "1.1" khi đủ các lát.
 - Điều cần chỉnh cho phase sau: lát 4 dựng quán trong `day` cần truyền `plan_dishes` (xem `docs/clarify.md` Q13) và nên kiểm id món kế hoạch thuộc menu. `contract.py` chưa kiểm `stoves`/`tables`/`day_plan`.
+
+## Cập nhật sau integration
+
+Extension `day` hiện đã tồn tại và có test chuyển phase, nhưng đường CLI chưa truyền `plan_dishes` theo `day_plan`; AC-P2-Q6 vẫn chỉ đạt ở mức simulation hook.

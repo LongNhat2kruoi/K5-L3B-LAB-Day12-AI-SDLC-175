@@ -1,21 +1,22 @@
 # TEAM
 
-**Tên nhóm:** …  **Số người:** …  (khớp `team_size` trong `game.contract.json`)
+**Tên nhóm:** K5-L3B-LAB-Day12-AI-SDLC-175  **Số người:** 4
 
-| Thành viên | GitHub handle | Module chính | Vai quy trình | Người dự phòng cho |
+Danh sách được đối chiếu với Git history và các module đã thay đổi.
+
+| Thành viên | GitHub handle | Module chính | Vai quy trình | Người dự phòng |
 |---|---|---|---|---|
-| Long Nhat | LongNhat2kruoi | `sim/gather` (lát 1: bơi, oxy, giỏ) | | |
-| KemmVSAI | KemmVSAI | `sim/gather` (lát 2: hái, bắt cá, kho) | | |
-| quangpham | quangpham | `sim/quan` (lát 3 + 4) | | |
-| | | `client/ui`, `qa` | | |
+| Long Nhat | LongNhat2kruoi | `sim/gather`, `runner` | Integrator, PO | quangpham |
+| KemmVSAI | KemmVSAI | `sim/gather`, inventory | Gather Resources | LongNhat2kruoi |
+| quangpham | quangpham | `sim/quan`, contract v1.1/v1.2 | PO, Backend | buiductuan |
+| Bùi Đức Tuấn | buiductuan | `play/`, pixel-art, UI | UI, Release | LongNhat2kruoi |
 
-**Vai quy trình:** PO (đầu mối hỏi giảng viên, giữ `docs/clarify.md`) · Integrator (giữ `docs/contracts/`, gắn tag) · QA lead · Scrum/Release. Có thể kiêm.
+## Thỏa thuận làm việc nhóm
 
-## Thỏa thuận làm việc nhóm (điền trong 15 phút kickoff, ≤ 10 dòng)
-
-- Kênh liên lạc: …
-- Khi bất đồng về thiết kế: … (ví dụ: nói 2 phút, không xong thì Integrator quyết và ghi lại lý do)
-- Khi ai đó trễ hoặc vướng quá 10 phút: … (ví dụ: nói ngay trong kênh, người dự phòng nhận việc)
-- Giờ standup giữa phase: …
-- Cách đọc code của nhau (tùy chọn): … (ví dụ: mỗi người đọc lát kế bên; PR hoặc xem trực tiếp)
-- Cách làm việc với Git: … (ví dụ: push thẳng nhánh chính / nhánh ngắn rồi gộp; thống nhất ai gắn tag)
+- Kênh liên lạc: GitHub Issues/PR và trao đổi trực tiếp trong buổi lab.
+- Mỗi task có một owner; người dự phòng nhận việc khi owner bị vướng quá 10 phút.
+- Bất đồng thiết kế được trao đổi tối đa 2 phút, sau đó Integrator chốt và ghi vào `docs/clarify.md`.
+- Mọi thay đổi contract, schema kho hoặc tuning phải có review của Integrator và QA.
+- Mỗi PR phải ghi lệnh test, kết quả test và rủi ro còn lại.
+- Standup giữa phase dùng `docs/standup.md`; retrospective dùng `docs/retro.md`.
+- Nhánh chính phải chạy test trước khi merge; tag phase do Integrator gắn.

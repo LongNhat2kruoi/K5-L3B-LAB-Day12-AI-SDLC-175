@@ -15,6 +15,10 @@
 
 Chạy lại e2e từ gốc repo: `python3 docs/proof/phase-3/quan/e2e_quan_v12.py <thư-mục-tạm>`.
 
-## Đánh giá ngắn
+## Đánh giá ngắn (tại thời điểm Phase 3)
 - Yêu cầu nào đạt / chưa đạt: adapter kho cá thể và quán độ tươi đạt. Smoke bàn giao hai tiến trình v1.2, `day` và HUD chưa kiểm vì gather và lát 4 chưa xong.
 - Điều cần chỉnh cho phase sau: gather làm theo checklist trong ADR-0001, rồi bật v1.2 trong một commit, đổi fixture test hộp đen, chạy lại regression P1–P2.
+
+## Cập nhật sau integration
+
+`day` đã được kiểm chứng ở contract hiện hành và có bằng chứng tại `docs/proof/day-mode.md`; phần gather v1.2 và việc bật `contract_version: "1.2"` vẫn chưa hoàn thành.

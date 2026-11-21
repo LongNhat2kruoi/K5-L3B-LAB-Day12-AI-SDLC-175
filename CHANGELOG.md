@@ -1,6 +1,11 @@
 # Changelog
 ## Unreleased
 
+### Current integration
+- Hoàn thiện extension `day`: một session chạy gather rồi quan, chuyển inventory trong bộ nhớ và cập nhật HUD/live phase.
+- Đồng bộ bản chơi trình duyệt, pixel-art, day plan và contract adapter từ `origin/main`.
+- Test suite hiện tại: 180 test pass.
+
 ### Breaking (khi bật Contract v1.2 — TICKET-03 "Mùa Nước Nổi")
 - **Kho đếm → kho cá thể.** File kho và `scenario.quan.stock` đổi từ `{"items": {kind: n}}` sang `{"items": [{"id", "kind", "fresh"}]}`; kho rỗng là `{"items": []}`. Ở v1.2, file kho đếm, kind lạ, id trùng, `fresh` ngoài [0,100] → mã 2.
 - `customers[].reserved` đổi từ map `kind → số` sang mảng id cá thể.
