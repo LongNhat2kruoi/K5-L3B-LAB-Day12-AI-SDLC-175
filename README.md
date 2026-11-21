@@ -47,6 +47,8 @@ Ngoài phần đề yêu cầu, nhóm được **thêm** nhân vật, loài cá/
 
 Contract hiện tại là v1.3: gameplay, tuning, kho và JSONL dùng schema v1.2; Phase 4 bổ sung benchmark, soak và leaderboard.
 
+Benchmark mở cửa sổ Pyxel 1280×720 và đo khung hình thật (cần `pip install pyxel`; không có Pyxel thì báo lỗi, mã thoát 1, không ghi số).
+
 ```bash
 python3 -m chonoi.benchmark --seed 42 --duration 30 --out bench.json
 python3 -m chonoi.soak --seed 7 --days 10 --out soak.json

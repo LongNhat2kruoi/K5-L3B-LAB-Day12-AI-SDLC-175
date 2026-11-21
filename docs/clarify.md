@@ -2,7 +2,7 @@
 
 > Q12 và Q15 vẫn là quyết định mở có chủ đích: không tự chốt thay PO. Các thay đổi contract/freshness chỉ được thực hiện sau khi nhóm xác nhận và cập nhật ADR tương ứng.
 
-> Phase 4 đã chốt: contract root là `1.3`, còn gameplay/tuning/kho/JSONL giữ schema v1.2; benchmark và soak chỉ đo/chạy headless, không thay đổi JSONL gameplay.
+> Phase 4 đã chốt: contract root là `1.3`, còn gameplay/tuning/kho/JSONL giữ schema v1.2; soak chạy headless; benchmark mở client Pyxel 1280×720 để đo khung hình thật (TICKET-04 "Benchmark có render"). Cả hai không thay đổi JSONL gameplay.
 
 | # | Ngày giờ | Câu hỏi | Trả lời / giả định | Ai quyết |
 |---|---|---|---|---|
