@@ -2,7 +2,7 @@
 
 import unittest
 
-from helpers import Workdir, read_jsonl, run_headless, snapshots, write_json
+from helpers import Workdir, read_jsonl, run_headless, snapshots, stock_items, write_json
 
 DISH = "ca_loc_nuong_trui"
 LAU = "lau_ca_linh_dien_dien"
@@ -39,25 +39,25 @@ class Contradictions(unittest.TestCase):
         self.assertEqual(rows, [], block)
 
     def test_khach_khoa_la(self):
-        self.assert_rejected({"stock": {"ca_loc": 1}, "customers": [cust(mood="vui")]})
+        self.assert_rejected({"stock": stock_items({"ca_loc": 1}), "customers": [cust(mood="vui")]})
 
     def test_dish_id_la_hoac_thieu(self):
-        self.assert_rejected({"stock": {"ca_loc": 1}, "customers": [cust(dish_id="pho")]})
+        self.assert_rejected({"stock": stock_items({"ca_loc": 1}), "customers": [cust(dish_id="pho")]})
         self.assert_rejected({"customers": [{"id": "C1", "table_id": "T1"}]})
 
     def test_state_la(self):
-        self.assert_rejected({"stock": {"ca_loc": 1}, "customers": [cust(state="sleeping")]})
+        self.assert_rejected({"stock": stock_items({"ca_loc": 1}), "customers": [cust(state="sleeping")]})
 
     def test_giu_khac_cong_thuc(self):
-        self.assert_rejected({"stock": {"ca_loc": 5}, "customers": [cust(reserved={"ca_loc": 2})]})
+        self.assert_rejected({"stock": stock_items({"ca_loc": 5}), "customers": [cust(reserved=["I1", "I2"])]})
 
     def test_giu_qua_ton(self):
-        self.assert_rejected({"stock": {}, "customers": [cust()]})
-        self.assert_rejected({"stock": {"ca_loc": 1}, "tables": [{"id": "T1"}],
+        self.assert_rejected({"stock": [], "customers": [cust()]})
+        self.assert_rejected({"stock": stock_items({"ca_loc": 1}), "tables": [{"id": "T1"}],
                               "customers": [cust(), cust(id="C2", table_id="T2")]})
 
     def test_assigned_khong_mon(self):
-        self.assert_rejected({"customers": [cust(order_status="assigned", reserved={})]})
+        self.assert_rejected({"customers": [cust(order_status="assigned", reserved=[])]})
 
     def test_bep_va_tay_cung_don(self):
         self.assert_rejected({"customers": [cust(order_status="assigned")], "hand": payload(),
@@ -67,7 +67,7 @@ class Contradictions(unittest.TestCase):
         self.assert_rejected({"hand": payload("C9")})
 
     def test_payload_tro_don_khong_assigned(self):
-        self.assert_rejected({"stock": {"ca_loc": 1}, "customers": [cust()], "hand": payload()})
+        self.assert_rejected({"stock": stock_items({"ca_loc": 1}), "customers": [cust()], "hand": payload()})
 
     def test_payload_khac_dish_id(self):
         self.assert_rejected({"customers": [cust(order_status="assigned")],
@@ -94,7 +94,7 @@ class Contradictions(unittest.TestCase):
         self.assert_rejected({"customers": [cust(order_status="served", base_price=60, tip=0)]})
 
     def test_waiting_eat_ticks_khac_0(self):
-        self.assert_rejected({"stock": {"ca_loc": 1}, "customers": [cust(eat_ticks_left=5)]})
+        self.assert_rejected({"stock": stock_items({"ca_loc": 1}), "customers": [cust(eat_ticks_left=5)]})
 
     def test_payload_dish_id_khong_phai_chuoi(self):
         self.assert_rejected({"hand": payload(dish_id=[])})
@@ -116,26 +116,26 @@ class Contradictions(unittest.TestCase):
 
 class ValidFixtures(unittest.TestCase):
     def test_khach_thieu_reserved_duoc_cap_dung_cong_thuc(self):
-        code, rows = run({"stock": {"ca_linh": 3, "bong_dien_dien": 1},
+        code, rows = run({"stock": stock_items({"ca_linh": 3, "bong_dien_dien": 1}),
                           "customers": [cust(dish_id=LAU)]})
         self.assertEqual(code, 0)
         c = snapshots(rows)[0]["customers"][0]
         self.assertEqual(set(c), CUSTOMER_KEYS)
-        self.assertEqual(c["reserved"], {"bong_dien_dien": 1, "ca_linh": 3})
+        self.assertEqual(c["reserved"], ["I1", "I2", "I3", "I4"])  # 3 ca_linh + 1 bong_dien_dien
         self.assertEqual((c["state"], c["order_tick"], c["patience_ticks_left"], c["eat_ticks_left"],
                           c["order_status"], c["base_price"], c["tip"]),
                          ("waiting", 0, 3600, 0, "reserved", None, None))
 
     def test_bo_khoa_luong_0_trong_reserved(self):
-        code, rows = run({"stock": {"ca_loc": 1}, "customers": [cust(reserved={"ca_loc": 1, "ca_linh": 0})]})
+        code, rows = run({"stock": stock_items({"ca_loc": 1}), "customers": [cust(reserved=["I1"])]})
         self.assertEqual(code, 0)
-        self.assertEqual(snapshots(rows)[0]["customers"][0]["reserved"], {"ca_loc": 1})
+        self.assertEqual(snapshots(rows)[0]["customers"][0]["reserved"], ["I1"])
 
     def test_assigned_co_mon_o_bep(self):
         code, rows = run({"customers": [cust(order_status="assigned")],
                           "stoves": [{"id": "B1", "state": "cooking", "dish": payload(), "cook_ticks_left": 10}]})
         self.assertEqual(code, 0)
-        self.assertEqual(snapshots(rows)[0]["customers"][0]["reserved"], {})
+        self.assertEqual(snapshots(rows)[0]["customers"][0]["reserved"], [])
 
     def test_khach_eating_hop_le(self):
         code, _ = run({"customers": [cust(state="eating", order_status="served", eat_ticks_left=30,

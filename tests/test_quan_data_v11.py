@@ -77,30 +77,41 @@ class DayPlan(unittest.TestCase):
             self.assertEqual(list(p["ingredients"]), sorted(p["ingredients"]))
 
 
+ITEMS = [{"id": "I1", "kind": "ca_keo", "fresh": 100}, {"id": "I2", "kind": "ca_keo", "fresh": 100},
+         {"id": "I3", "kind": "keo_neo", "fresh": 100}]
+
+
 class Inventory(unittest.TestCase):
     def test_kho_co_ca_keo_keo_neo(self):
         with Workdir() as w:
-            inv = write_json(w.path("inv.json"), {"items": {"ca_keo": 2, "keo_neo": 1}})
+            inv = write_json(w.path("inv.json"), {"items": ITEMS})
             out = w.path("o.jsonl")
             code, err = run_headless("--mode", "quan", "--seed", "1", "--ticks", "1",
                                      "--inventory", inv, "--out", out)
             self.assertEqual(code, 0, err)
             s0 = snapshots(read_jsonl(out))[0]
-        self.assertEqual(s0["stock"], {"ca_keo": 2, "keo_neo": 1})
+        self.assertEqual(s0["stock"], ITEMS)
 
     def test_scenario_stock_co_ca_keo_keo_neo(self):
         with Workdir() as w:
-            sc = write_json(w.path("sc.json"), {"quan": {"stock": {"ca_keo": 2, "keo_neo": 1}}})
+            sc = write_json(w.path("sc.json"), {"quan": {"stock": ITEMS}})
             out = w.path("o.jsonl")
             code, err = run_headless("--mode", "quan", "--seed", "1", "--ticks", "1",
                                      "--scenario", sc, "--out", out)
             self.assertEqual(code, 0, err)
             s0 = snapshots(read_jsonl(out))[0]
-        self.assertEqual(s0["stock"], {"ca_keo": 2, "keo_neo": 1})
+        self.assertEqual(s0["stock"], ITEMS)
 
     def test_kind_la_van_exit_2(self):
         with Workdir() as w:
-            inv = write_json(w.path("inv.json"), {"items": {"ca_la": 1}})
+            inv = write_json(w.path("inv.json"), {"items": [{"id": "I1", "kind": "ca_la", "fresh": 100}]})
+            code, _ = run_headless("--mode", "quan", "--seed", "1", "--ticks", "1",
+                                   "--inventory", inv, "--out", w.path("o.jsonl"))
+        self.assertEqual(code, 2)
+
+    def test_file_kho_dem_bi_tu_choi_o_v12(self):
+        with Workdir() as w:
+            inv = write_json(w.path("inv.json"), {"items": {"ca_keo": 2}})
             code, _ = run_headless("--mode", "quan", "--seed", "1", "--ticks", "1",
                                    "--inventory", inv, "--out", w.path("o.jsonl"))
         self.assertEqual(code, 2)
