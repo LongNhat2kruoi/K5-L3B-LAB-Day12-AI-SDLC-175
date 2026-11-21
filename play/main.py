@@ -55,6 +55,22 @@ SHOP_NAME = {"oxygen": "Bình oxy", "hp": "Áo phao"}
 SHOP_TICKS = 600
 
 
+def as_items(c):
+    """Giỏ/kho về mảng cá thể {kind, fresh|None}. Nhận: mảng tên loại, mảng {id,kind,fresh}, {loại: số}, {"items": [...]}."""
+    if not c:
+        return []
+    if isinstance(c, dict):
+        if "items" in c:
+            return as_items(c["items"])
+        return [{"kind": k, "fresh": None} for k, n in c.items() for _ in range(n)]
+    return [x if isinstance(x, dict) else {"kind": x, "fresh": None} for x in c]
+
+
+def usable(items, spoil):
+    """Đếm theo loại, bỏ hàng ươn (fresh < ngưỡng)."""
+    return Counter(x["kind"] for x in items if x.get("fresh") is None or x["fresh"] >= spoil)
+
+
 def kname(k):
     return KIND.get(k, (k, CREAM))[0]
 
@@ -77,6 +93,7 @@ class Game:
         for d, r in TICKET_MENU.items():
             self.recipes.setdefault(d, r)
         self.shop = self.tuning.get("shop", {}).get("upgrades") or TICKET_SHOP
+        self.spoil = self.tuning.get("freshness", {}).get("spoiled_below", 30)
         self.seen = set()
         self.to_menu()
         pyxel.run(self.update, self.draw)
@@ -285,6 +302,7 @@ class Game:
             "choke": lambda: "Sặc nước! Mất 1 Máu",
             "monster_hit": lambda: f"Cá Sấu cắn! Mất 1 Máu, rơi {len(d.get('lost') or [])} món",
             "faint": lambda: "Út Sen ngất... mất hết giỏ",
+            "spoiled": lambda: f"{kname(d.get('kind'))} bị ươn rồi!" + (" (trong kho)" if d.get("location") == "stock" else ""),
             "customer_arrived": lambda: f"Khách vô! Gọi {DISH.get(d.get('dish_id'), d.get('dish_id'))}",
             "no_dish": lambda: "Khách vô mà kho hết món...",
             "dish_ready": lambda: "Má Tư: Bếp chín rồi con!",
@@ -331,6 +349,80 @@ class Game:
             pyxel.tri(x - 6 * d, y, x - 10 * d, y - 3 + flap, x - 10 * d, y + 3 + flap, PALM)
             pyxel.line(x - 2, y - 3, x + 2, y - 3, PALM)
             pyxel.pset(x + 4 * d, y - 1, INK)
+
+    def fresh_col(self, f):
+        return CREAM if f is None or f >= 70 else LANTERN if f >= 50 else SKIN  # chữ trên nền gỗ: kem > vàng > hồng = tươi > héo
+
+    def fresh_slot(self, x, y, it):
+        """Ô giỏ 5x7: màu loại; phần đã mất tươi tô tối từ trên xuống; ươn = nâu + X đỏ."""
+        if it is None:
+            pyxel.rect(x, y, 5, 7, BAMBOO)
+            return
+        f = it.get("fresh")
+        if f is not None and f < self.spoil:
+            pyxel.rect(x, y, 5, 7, MUD)
+            pyxel.line(x, y + 1, x + 4, y + 5, RED)
+            pyxel.line(x + 4, y + 1, x, y + 5, RED)
+            return
+        pyxel.rect(x, y, 5, 7, kcol(it["kind"]))
+        if f is not None:
+            lost = round(7 * (1 - f / 100))
+            if lost:
+                pyxel.dither(0.6)
+                pyxel.rect(x, y, 5, lost, INK)
+                pyxel.dither(1.0)
+
+    def groups(self, items):
+        """[(loại, số dùng được, số ươn, tươi TB hoặc None)] theo thứ tự xuất hiện."""
+        out = {}
+        for it in items:
+            g = out.setdefault(it["kind"], [0, 0, []])
+            f = it.get("fresh")
+            if f is not None and f < self.spoil:
+                g[1] += 1
+            else:
+                g[0] += 1
+                if f is not None:
+                    g[2].append(f)
+        return [(k, ok, bad, sum(fs) / len(fs) if fs else None) for k, (ok, bad, fs) in out.items()]
+
+    def stock_rows(self, x, y, items, cols=2):
+        rows = self.groups(items)
+        for i, (k, ok, bad, avg) in enumerate(rows):
+            cx, cy = x + (i % cols) * 140, y + (i // cols) * 13
+            self.item_icon(cx, cy + 2, k)
+            label = f"{kname(k)} ×{ok}" + (f" ({avg:.0f})" if avg is not None else "")
+            self.text(cx + 10, cy, label, self.fresh_col(avg), shadow=False)
+            if bad:
+                self.text(cx + 14 + self.font.text_width(label), cy, f"+{bad} ươn", SKIN, shadow=False)
+        return y + ((len(rows) + cols - 1) // cols) * 13
+
+    def stock_line(self, x, y, items):
+        self.text(x, y, "Kho:", CREAM)
+        x += 26
+        if not items:
+            self.text(x, y, "trống", CREAM)
+            return
+        for k, ok, bad, avg in self.groups(items):
+            seg = f"{kname(k)} {ok}" + (f"({avg:.0f})" if avg is not None else "")
+            self.text(x, y, seg, self.fresh_col(avg))
+            x += self.font.text_width(seg) + 3
+            if bad:
+                self.text(x, y, f"+{bad}ươn", RED)
+                x += self.font.text_width(f"+{bad}ươn") + 3
+            x += 4
+
+    def price_hint(self, s, cust):
+        """Giá dự kiến = floor(giá × tươi TB phần đã giữ / 100); kho dạng đếm thì hiện giá niêm yết."""
+        price = self.tuning["menu"].get(cust.get("dish_id"), {}).get("price")
+        if price is None:
+            return ""
+        res = cust.get("reserved")
+        by_id = {x.get("id"): x for x in as_items(s.get("stock")) if x.get("id")}
+        fs = [by_id[i]["fresh"] for i in res if i in by_id] if isinstance(res, list) else []
+        if fs:
+            return f" ~{math.floor(price * (sum(fs) / len(fs)) / 100)}k"
+        return f" {price}k"
 
     def hud_clock(self, prefix, ticks):
         low = (ticks or 0) <= 30 * 60
@@ -491,10 +583,11 @@ class Game:
 
     def draw_evening_intro(self):
         self.screen(f"NGÀY {self.day}/{DAYS} · CHIỀU VỀ, MỞ QUÁN", LANTERN)
-        items = self.inventory or {}
-        self.text(24, 31, "Nhập kho:" if items else "Nhập kho: trống (về tay không)", GLASS, shadow=False)
-        y = self.ingredient_rows(34, 45, items, {}) + 4
+        inv = as_items(self.inventory)
+        self.text(24, 31, "Nhập kho (độ tươi):" if inv else "Nhập kho: trống (về tay không)", GLASS, shadow=False)
+        y = self.stock_rows(34, 45, inv) + 4
         self.text(24, y, "Tối nay nấu được:", GLASS, shadow=False)
+        items = usable(inv, self.spoil)
         can = [d for d in self.plan() if all(items.get(k, 0) >= q for k, q in self.recipes.get(d, {}).items())]
         for i, d in enumerate(can or [None]):
             self.text(34, y + 14 + i * 12, DISH.get(d, d) if d else "(chưa đủ đồ nấu món nào)", CREAM if d else RED, shadow=False)
@@ -634,16 +727,16 @@ class Game:
         if "hp" in p:
             for i in range(p.get("hp_max", 3)):
                 self.heart(166 + i * 9, 4, i < p["hp"])
-        hold, cap = s.get("hold", []), s.get("hold_capacity", 12)
+        hold, cap = as_items(s.get("hold")), s.get("hold_capacity", 12)
         x0 = W - 2 - cap * 6
         self.text(x0 - 22, 2, "Giỏ")
         for i in range(cap):
-            pyxel.rect(x0 + i * 6, 4, 5, 7, BAMBOO if i >= len(hold) else kcol(hold[i]))
+            self.fresh_slot(x0 + i * 6, 4, hold[i] if i < len(hold) else None)
         # hàng 2: độ sâu + danh sách Má Tư cần (đã có/cần)
         pyxel.rect(0, 16, W - 68, 12, WOOD_DK)
         zone = "nông" if pd < 10 else "giữa" if pd < 20 else "sâu"
         self.text(4, 17, f"Sâu {pd:.0f}m {zone}", GLASS, shadow=False)
-        have = Counter(hold)
+        have = usable(hold, self.spoil)
         x = 82
         for k, n in (self.need() if hasattr(self, "day") else {}).items():
             self.item_icon(x, 19, k)
@@ -707,7 +800,7 @@ class Game:
             ("1. Tới Bếp, bấm E: nấu món khách gọi.", LANTERN),
             ("2. Chờ chín (đếm giây), bấm E: lấy món.", LANTERN),
             ("3. Mang tới Bàn, bấm E: dọn món.", LANTERN),
-            ("Khách ăn xong tự trả tiền. Dọn nhanh có boa.", CREAM),
+            ("Hàng càng tươi giá càng cao; ươn (X đỏ) thì bỏ.", CREAM),
             ("Vạch màu dưới món gọi: khách còn chờ được bao lâu.", CREAM),
             ("Chờ quá lâu: khách bỏ về, mất uy tín. Esc/P: dừng.", RED)]),
     }
@@ -749,7 +842,7 @@ class Game:
         pos = p.get("pos", t["start_pos"])
         surf = p.get("at_surface", pos[1] <= t["surface_depth"])
         dist = lambda q: math.hypot(q[0] - pos[0], q[1] - pos[1])
-        hold, cap = len(s.get("hold", [])), s.get("hold_capacity", 12)
+        hold, cap = len(as_items(s.get("hold"))), s.get("hold_capacity", 12)
         nodes = [n for n in s.get("nodes", []) if n.get("ready", True)]
         fish = s.get("fish", [])
         here = None
@@ -770,7 +863,7 @@ class Game:
             return here, t["dock_pos"], "Về Bến, bấm E để mở quán"
         goals = nodes + fish
         if hasattr(self, "day"):  # ưu tiên thứ Má Tư còn thiếu
-            have = Counter(s.get("hold", []))
+            have = usable(as_items(s.get("hold")), self.spoil)
             want = [o for o in goals if have.get(o["kind"], 0) < self.need().get(o["kind"], 0)]
             goals = want or goals
         if not goals:
@@ -800,7 +893,7 @@ class Game:
                 elif st == "ready" and not hand:
                     here = (f"E: lấy {dname((o.get('dish') or {}).get('dish_id'))}", LANTERN)
                 elif st == "idle" and todo and not hand:
-                    here = (f"E: nấu {dname(todo[0]['dish_id'])}", LANTERN)
+                    here = (f"E: nấu {dname(todo[0]['dish_id'])}{self.price_hint(s, todo[0])}", LANTERN)
             else:
                 c = next((c for c in custs if c.get("table_id") == o["id"]), None)
                 if c and hand and c.get("state") == "waiting":
@@ -819,7 +912,7 @@ class Game:
             return here, stoves[0]["pos"] if stoves else None, f"Tới Bếp, E nấu {dname(todo[0]['dish_id'])}"
         if any(c.get("state") == "eating" for c in custs):
             return here, None, "Khách đang ăn, chờ trả tiền"
-        if not s.get("stock"):
+        if not usable(as_items(s.get("stock")), self.spoil):
             return here, None, "Kho hết đồ, chờ hết ca"
         return here, None, "Chờ khách vô..."
 
@@ -926,7 +1019,7 @@ class Game:
         self.text(212, 2, "Tay: " + str(hand_txt)[:16])
         stock = s.get("stock", {})
         self.footer(152, nxt)
-        self.text(4, 166, "Kho: " + (", ".join(f"{kname(k)} ×{n}" for k, n in stock.items()) or "trống"))
+        self.stock_line(4, 166, as_items(stock))
         if self.sess.done:
             self.end_banner("Hết ca tối")
 
