@@ -24,7 +24,21 @@ def load_contract(path=DEFAULT_PATH) -> dict:
     except (OSError, ValueError) as e:
         raise BadInput(f"không đọc được {path}: {e}")
     validate_tuning(c.get("tuning"))
+    if (c.get("contract_version") == "1.2") != ("freshness" in c["tuning"]):
+        raise BadInput("contract_version 1.2 khi và chỉ khi tuning có khối freshness")
     return c
+
+
+def _validate_freshness(fr):
+    keys = ("initial", "gather_decay_per_s", "quan_decay_per_s", "spoiled_below")
+    if not isinstance(fr, dict) or set(fr) != set(keys) or not all(_num(fr[k]) for k in keys):
+        raise BadInput(f"tuning.freshness phải có đúng 4 khóa số {list(keys)}")
+    if fr["initial"] != 100:
+        raise BadInput("tuning.freshness.initial phải bằng 100")
+    if fr["gather_decay_per_s"] <= 0 or fr["quan_decay_per_s"] <= 0:
+        raise BadInput("tuning.freshness.*_decay_per_s phải > 0")
+    if not (0 < fr["spoiled_below"] < 100):
+        raise BadInput("tuning.freshness.spoiled_below phải thuộc (0, 100)")
 
 
 def _int_between(name, v, lo, hi):
@@ -116,6 +130,8 @@ def validate_tuning(t):
     if not isinstance(g, dict) or not isinstance(q, dict) or not isinstance(menu, dict):
         raise BadInput("tuning phải có gather, quan, menu")
     _validate_gather(g)
+    if "freshness" in t:
+        _validate_freshness(t["freshness"])
     # Quán: dải hợp lệ P1 (PRD mục 13.2)
     _between("quan.duration_s", q.get("duration_s"), 60, 600)
     _bounds("quan", q.get("bounds"), ("x", "z"))
