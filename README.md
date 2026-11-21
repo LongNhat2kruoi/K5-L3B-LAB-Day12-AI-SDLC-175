@@ -13,6 +13,8 @@
 
 Chạy trên máy: `python -m http.server 8000` ở thư mục gốc repo rồi mở http://localhost:8000/play/
 
+Demo một lượt (sáng rồi tối): [`docs/demo/gameplay-demo.mp4`](docs/demo/gameplay-demo.mp4).
+
 ## Bắt buộc (chỉ có thế)
 
 Cách làm việc kỹ thuật là **tự do** (push thẳng, nhánh + PR, pair, có hay không CI…). Cái bắt buộc:
