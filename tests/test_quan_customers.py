@@ -11,7 +11,7 @@ from chonoi.sim.quan import QuanSim
 from helpers import Workdir, events, read_jsonl, run_headless, write_json
 
 DISH = "ca_loc_nuong_trui"
-ALL_DISHES = {"ca_loc_nuong_trui", "goi_bong_sung", "lau_ca_linh_dien_dien"}
+ALL_DISHES = {"ca_loc_nuong_trui", "goi_bong_sung", "lau_ca_linh_dien_dien", "canh_chua_ca_loc"}
 RICH = {"ca_loc": 5, "bong_sung": 5, "ca_linh": 5, "bong_dien_dien": 5}
 
 
@@ -48,9 +48,11 @@ class Arrivals(unittest.TestCase):
         self.assertEqual(c["patience_ticks_left"], 3600)
 
     def test_khach_ke_tiep_khi_ban_trong_lai(self):
-        # chỉ ca_loc: khách 1 đến 120, hết kiên nhẫn 3720 (= 120 + 4 * 900) rồi lượt kế đến cùng tick
-        rows, _ = run({"stock": {"ca_loc": 2}}, 3800)
+        # 4 bàn, chỉ 1 ca_loc: khách 1 đến 120 giữ hết nguyên liệu, các lượt 1020/1920/2820 no_dish;
+        # khách 1 hết kiên nhẫn 3720 (= 120 + 4 * 900) rồi lượt kế đến cùng tick
+        rows, _ = run({"stock": {"ca_loc": 1}}, 3800)
         self.assertEqual([e["tick"] for e in events(rows, "customer_arrived")], [120, 3720])
+        self.assertEqual([e["tick"] for e in events(rows, "no_dish")], [1020, 1920, 2820])
         left = events(rows, "customer_left")
         self.assertEqual([e["tick"] for e in left], [3720])
         names = [r["name"] for r in rows if r["type"] == "event" and r["tick"] == 3720]
@@ -64,9 +66,11 @@ class Arrivals(unittest.TestCase):
         self.assertEqual([r for r in rows if r["type"] == "snapshot"][-1]["customers"], [])
 
     def test_ban_day_bo_luot(self):
-        rows, _ = run({"stock": RICH}, 1100)
-        self.assertEqual([e["tick"] for e in events(rows, "customer_arrived")], [120])
-        self.assertEqual(events(rows, "no_dish"), [])  # lượt 1020 bị bỏ, không event
+        # 4 bàn đều có khách: lượt 120 và 1020 bị bỏ, không event
+        full = [cust(id=f"C{i}", table_id=f"T{i}") for i in range(1, 5)]
+        rows, _ = run({"stock": RICH, "customers": full}, 1100)
+        self.assertEqual(events(rows, "customer_arrived"), [])
+        self.assertEqual(events(rows, "no_dish"), [])
 
     def test_random_customers_false(self):
         rows, _ = run({"stock": RICH, "random_customers": False}, 200)
@@ -75,7 +79,6 @@ class Arrivals(unittest.TestCase):
 
     def test_giu_cho_an_kho_voi_khach_sau(self):
         t = copy.deepcopy(load_contract()["tuning"])
-        t["quan"]["tables"].append({"id": "T2", "pos": [12, 2]})
         sim = QuanSim(t, {"stock": {"ca_loc": 1}}, Streams(1), IdAllocator())
         inp = InputState((0.0, 0.0), {}, set())
         seen = []
