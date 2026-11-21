@@ -7,8 +7,9 @@ phải có đúng một món, khách eating thiếu giá/tip...) — xem PRD-0 m
 
 import json
 
+from . import fresh
 from .errors import BadInput
-from .inventory import KINDS_P1, validate_items
+from .inventory import KINDS, validate_item_list, validate_items
 
 GATHER_KEYS = {"player", "hold", "nodes", "fish", "random_fish", "time_left_ticks"}
 GATHER_PLAYER_KEYS = {"pos", "vel", "heading_deg", "hp", "oxygen_ticks", "zero_oxy_ticks",
@@ -116,7 +117,9 @@ def _validate_gather(b, tuning):
         raise BadInput("random_fish phải là boolean")
     if "hold" in b:
         h = b["hold"]
-        if not isinstance(h, list) or any(k not in KINDS_P1 for k in h):
+        if fresh.enabled(tuning):
+            h = validate_item_list(h)
+        elif not isinstance(h, list) or any(k not in KINDS for k in h):
             raise BadInput("hold phải là mảng id nguyên liệu hợp lệ")
         if len(h) > g["hold_capacity"]:
             raise BadInput("hold vượt sức chứa")
@@ -170,7 +173,10 @@ def _validate_quan(b, tuning):
         if arr in b:
             _check_ids(arr, b[arr])
     if "stock" in b:
-        validate_items(b["stock"])
+        if fresh.enabled(tuning):
+            validate_item_list(b["stock"])
+        else:
+            validate_items(b["stock"])
     p = b.get("player", {})
     if not isinstance(p, dict) or set(p) - QUAN_PLAYER_KEYS:
         raise BadInput("quan.player chỉ có pos và vel")
@@ -219,7 +225,7 @@ def _validate_quan(b, tuning):
     pmax = int(round(q["patience_s"] * 60))
     emax = int(round(q["eat_s"] * 60))
     for c in b.get("customers", []):
-        _validate_customer(c, menu, pmax, emax)
+        _validate_customer(c, menu, pmax, emax, fresh.enabled(tuning))
 
 
 def _payload(name, v, menu):
@@ -236,7 +242,7 @@ def _payload(name, v, menu):
         raise BadInput(f"{name}.base_price phải là số nguyên > 0")
 
 
-def _validate_customer(c, menu, pmax, emax):
+def _validate_customer(c, menu, pmax, emax, per_item=False):
     n = f"customers.{c['id']}"
     extra = set(c) - CUSTOMER_KEYS
     if extra:
@@ -256,10 +262,15 @@ def _validate_customer(c, menu, pmax, emax):
                 raise BadInput(f"{n}.{key} vượt tối đa {hi}")
     if "reserved" in c:
         r = c["reserved"]
-        if not isinstance(r, dict) or any(k not in KINDS_P1 for k in r):
-            raise BadInput(f"{n}.reserved phải là object kind -> số lượng")
-        for k, v in r.items():
-            _nonneg_int(f"{n}.reserved.{k}", v)
+        if per_item:
+            if (not isinstance(r, list) or any(not isinstance(i, str) or not i for i in r)
+                    or len(r) != len(set(r))):
+                raise BadInput(f"{n}.reserved phải là mảng id cá thể (chuỗi khác rỗng, không trùng)")
+        else:
+            if not isinstance(r, dict) or any(k not in KINDS for k in r):
+                raise BadInput(f"{n}.reserved phải là object kind -> số lượng")
+            for k, v in r.items():
+                _nonneg_int(f"{n}.reserved.{k}", v)
     if c.get("base_price") is not None:
         _nonneg_int(f"{n}.base_price", c["base_price"])
         if c["base_price"] <= 0:

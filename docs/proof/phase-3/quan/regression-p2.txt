@@ -1,0 +1,2 @@
+# commit: 66b738c — regression P2 trên nhánh Ticket-03 (schema đếm): chuỗi event so với docs/proof/phase-2/quan/e2e-log.txt
+GIỐNG HỆT (65 event + dòng end)

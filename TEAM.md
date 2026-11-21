@@ -4,10 +4,10 @@
 
 | Thành viên | GitHub handle | Module chính | Vai quy trình | Người dự phòng cho |
 |---|---|---|---|---|
-| | | `sim/gather` | | |
-| | | `sim/quan` | | |
-| | | `client/ui` | | |
-| | | `qa` | | |
+| Long Nhat | LongNhat2kruoi | `sim/gather` (lát 1: bơi, oxy, giỏ) | | |
+| KemmVSAI | KemmVSAI | `sim/gather` (lát 2: hái, bắt cá, kho) | | |
+| quangpham | quangpham | `sim/quan` (lát 3 + 4) | | |
+| | | `client/ui`, `qa` | | |
 
 **Vai quy trình:** PO (đầu mối hỏi giảng viên, giữ `docs/clarify.md`) · Integrator (giữ `docs/contracts/`, gắn tag) · QA lead · Scrum/Release. Có thể kiêm.
 
