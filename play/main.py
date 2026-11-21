@@ -92,8 +92,10 @@ def kcol(k):
 
 
 class Game:
-    def __init__(self):
-        pyxel.init(W, H, title="Quan An Cho Noi", fps=60, quit_key=pyxel.KEY_NONE)  # Esc dùng để tạm dừng
+    def __init__(self, seed=SEED, on_frame=None, display_scale=None):
+        """on_frame/display_scale chỉ dùng cho chonoi.benchmark: vào thẳng sáng Ngày 1, gọi on_frame() sau mỗi lần vẽ."""
+        self.seed, self.on_frame = seed, on_frame
+        pyxel.init(W, H, title="Quan An Cho Noi", fps=60, quit_key=pyxel.KEY_NONE, display_scale=display_scale)  # Esc dùng để tạm dừng
         meta = json.load(open(os.path.join(ASSETS, "frames.json")))
         pyxel.colors[:] = meta["colors"]
         self.swim_fr, self.quan_fr = meta["swim"], meta["quan"]
@@ -108,7 +110,15 @@ class Game:
         self.spoil = self.tuning.get("freshness", {}).get("spoiled_below", 30)
         self.seen = set()
         self.to_menu()
-        pyxel.run(self.update, self.draw)
+        if on_frame:
+            self.new_game()
+            self.start("gather")
+            self.help = None
+        pyxel.run(self.update, self.draw_frame if on_frame else self.draw)
+
+    def draw_frame(self):
+        self.draw()
+        self.on_frame()
 
     # ------------------------------------------------------------------ vòng đời
     def to_menu(self):
@@ -159,7 +169,7 @@ class Game:
 
     def start(self, mode):
         inv = self.inventory if mode == "quan" else None
-        self.sess = Session(mode, self.day_tuning(), {}, SEED + self.day - 1, inv)
+        self.sess = Session(mode, self.day_tuning(), {}, self.seed + self.day - 1, inv)
         self.inputs = LiveInputs()
         self.snap = self.sess.snapshot()
         self.scene = mode
