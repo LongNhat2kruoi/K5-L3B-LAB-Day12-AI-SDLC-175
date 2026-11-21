@@ -37,13 +37,13 @@ class ComputeMetricsTest(unittest.TestCase):
 
 
 class BenchmarkCommandTest(unittest.TestCase):
-    def run_bench(self, args, extra_code=None):
+    def run_bench(self, args, extra_code=None, cwd=ROOT):
         env = dict(os.environ, PYTHONPATH=ROOT)
         if extra_code:
             cmd = [sys.executable, "-c", extra_code] + args
         else:
             cmd = [sys.executable, "-m", "chonoi.benchmark"] + args
-        return subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True, timeout=120)
+        return subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, timeout=120)
 
     @unittest.skipUnless(importlib.util.find_spec("pyxel") and os.environ.get("BENCH_GUI") == "1",
                          "cần pyxel và BENCH_GUI=1 (mở cửa sổ thật)")
@@ -60,6 +60,26 @@ class BenchmarkCommandTest(unittest.TestCase):
             self.assertIsInstance(data[k], (int, float))
         self.assertGreater(data["frames"], 0)
         self.assertGreaterEqual(data["measured_s"], 1)
+
+    @unittest.skipUnless(importlib.util.find_spec("pyxel") and os.environ.get("BENCH_GUI") == "1",
+                         "cần pyxel và BENCH_GUI=1 (mở cửa sổ thật)")
+    def test_relative_out_lands_in_original_cwd(self):
+        with tempfile.TemporaryDirectory() as d:
+            r = self.run_bench(["--seed", "42", "--duration", "1", "--warmup", "0.2",
+                                "--out", os.path.join("sub", "bench.json")], cwd=d)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertTrue(os.path.exists(os.path.join(d, "sub", "bench.json")))
+
+    def test_relative_out_resolved_before_pyxel_loads(self):
+        # pyxel bị chặn nên main() thoát 1; chdir giả lập việc Pyxel đổi thư mục: không được ghi file nào
+        with tempfile.TemporaryDirectory() as d:
+            code = ("import sys; sys.modules['pyxel']=None; import chonoi.benchmark as b; "
+                    "import os; seen=[]; orig=os.path.abspath; "
+                    "os.path.abspath=lambda p: (seen.append(p), orig(p))[1]; "
+                    "rc=b.main(sys.argv[1:]); assert 'rel.json' in seen, seen; raise SystemExit(rc)")
+            r = self.run_bench(["--seed", "1", "--duration", "1", "--out", "rel.json"], code, cwd=d)
+            self.assertEqual(r.returncode, 1, r.stderr)
+            self.assertEqual(os.listdir(d), [])
 
     def test_missing_pyxel_exits_1_without_output(self):
         with tempfile.TemporaryDirectory() as d:

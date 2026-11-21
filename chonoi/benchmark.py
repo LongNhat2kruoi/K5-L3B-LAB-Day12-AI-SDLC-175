@@ -6,6 +6,7 @@ Vẽ bằng đúng `play.main.Game.draw`; ở đây chỉ đo thời gian giữa
 import argparse
 import json
 import math
+import os
 import sys
 import time
 
@@ -25,6 +26,7 @@ def compute_metrics(frame_times, load_ms):
 
 
 def _write(path, result):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(result, f, ensure_ascii=False, separators=(",", ":"))
         f.write("\n")
@@ -38,6 +40,7 @@ def main(argv=None):
     p.add_argument("--out", required=True)
     p.add_argument("--warmup", type=float, default=3.0)
     a = p.parse_args(argv)
+    a.out = os.path.abspath(a.out)  # trước khi Pyxel có thể đổi thư mục làm việc
     if a.duration <= 0:
         p.error("--duration must be > 0")
     if a.warmup < 0:
