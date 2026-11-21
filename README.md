@@ -3,6 +3,16 @@
 > **Làm theo nhóm 4–6 người** · Dùng AI để xây game 2D qua **4 phase** trong **3 giờ**: Út Sen lặn bắt cá, hái rau trên mặt nước rồi tối mở quán phục vụ khách.
 > **Yêu cầu từng phase mở đúng mốc giờ tại lab board:** **[Chợ Nổi Lab](https://claude.ai/artifact/E35v787wSx2wDgPTNhMVDg)** (cần đăng nhập claude.ai; có trợ giảng AI cho từng phase).
 
+## Chơi thử ngay (bản của nhóm)
+
+**[▶ Chơi trên trình duyệt](https://raw.githack.com/LongNhat2kruoi/K5-L3B-LAB-Day12-AI-SDLC-175/main/play/index.html)**: luôn chạy code mới nhất ở `main`, không cần cài gì.
+
+1. Lần đầu hiện trang "External Content Notice": bấm tiếp tục.
+2. Bấm "Click to start" (chưa vào thì bấm thêm lần nữa), chờ khoảng 10 giây để tải.
+3. W/S chọn, Enter xác nhận. Sáng: WASD bơi, E hái, Space bắt cá. Tối: WASD đi, E nấu/bưng/phục vụ. H mở hướng dẫn, Esc tạm dừng.
+
+Chạy trên máy: `python -m http.server 8000` ở thư mục gốc repo rồi mở http://localhost:8000/play/
+
 ## Bắt buộc (chỉ có thế)
 
 Cách làm việc kỹ thuật là **tự do** (push thẳng, nhánh + PR, pair, có hay không CI…). Cái bắt buộc:
