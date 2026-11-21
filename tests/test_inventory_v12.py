@@ -20,6 +20,18 @@ def base_contract():
         return json.load(f)
 
 
+def flag_off_contract():
+    """Contract v1.0 (không có freshness): kho đếm, dùng để kiểm luật cờ tắt; repo đã bật v1.3."""
+    c = base_contract()
+    c["contract_version"] = "1.0"
+    del c["tuning"]["freshness"]
+    return c
+
+
+def flag_off_tuning():
+    return flag_off_contract()["tuning"]
+
+
 def v12_tuning():
     t = copy.deepcopy(base_contract()["tuning"])
     t["freshness"] = dict(FRESHNESS)
@@ -120,7 +132,7 @@ class InventoryV12(unittest.TestCase):
     def test_fresh_helpers(self):
         t = v12_tuning()
         self.assertTrue(fresh.enabled(t))
-        self.assertFalse(fresh.enabled(base_contract()["tuning"]))
+        self.assertFalse(fresh.enabled(flag_off_tuning()))
         self.assertEqual(fresh.per_tick(t, "gather"), Fraction(1, 120))
         self.assertEqual(fresh.per_tick(t, "quan"), Fraction(1, 240))
         self.assertEqual(fresh.threshold(t), 30)
@@ -130,13 +142,18 @@ class InventoryV12(unittest.TestCase):
 
 class ContractV12(unittest.TestCase):
     def load(self, mutate):
-        c = base_contract()
+        c = flag_off_contract()
         mutate(c)
         with Workdir() as w:
             return load_contract(write_json(w.path("c.json"), c))
 
-    def test_repo_contract_still_loads(self):
-        self.assertNotIn("freshness", load_contract()["tuning"])
+    def test_flag_off_contract_loads_without_freshness(self):
+        self.assertNotIn("freshness", self.load(lambda c: None)["tuning"])
+
+    def test_repo_contract_enables_item_schema(self):
+        c = load_contract()
+        self.assertIn(c["contract_version"], ("1.2", "1.3"))
+        self.assertTrue(fresh.enabled(c["tuning"]))
 
     def test_valid_v12(self):
         def m(c):
@@ -206,7 +223,7 @@ class ScenarioV12(unittest.TestCase):
                 self.scenario("quan", {"customers": [{**cust, "reserved": bad}]})
 
     def test_flag_off_keeps_count_schema(self):
-        t = base_contract()["tuning"]
+        t = flag_off_tuning()
         self.scenario("quan", {"stock": {"ca_loc": 2}}, t)
         self.scenario("gather", {"hold": ["ca_loc"]}, t)
         with self.assertRaises(BadInput):

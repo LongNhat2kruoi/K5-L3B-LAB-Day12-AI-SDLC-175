@@ -10,7 +10,7 @@ from chonoi.rng import Streams
 from chonoi.runner import run
 from chonoi.sim.quan import QuanSim
 from helpers import Workdir, events, read_jsonl, snapshots
-from test_inventory_v12 import item, v12_tuning
+from test_inventory_v12 import flag_off_tuning, item, v12_tuning
 
 IDLE = InputState((0.0, 0.0), {}, set())
 PRESS = InputState((0.0, 0.0), {}, {"interact"})
@@ -196,8 +196,7 @@ class Schema(unittest.TestCase):
             QuanSim(v12_tuning(), {}, Streams(1), IdAllocator(), inventory={"ca_loc": 2})
 
     def test_item_stock_rejected_in_v11(self):
-        from chonoi.contract import load_contract
-        t = load_contract()["tuning"]
+        t = flag_off_tuning()
         with self.assertRaises(BadInput):
             QuanSim(t, {"stock": [item("I1")]}, Streams(1), IdAllocator())
         with self.assertRaises(BadInput):
@@ -206,9 +205,8 @@ class Schema(unittest.TestCase):
     def test_reserved_map_rejected_in_v12_and_list_in_v11(self):
         with self.assertRaises(BadInput):
             make([item("I1")], [cust(reserved={"ca_loc": 1})])
-        from chonoi.contract import load_contract
         with self.assertRaises(BadInput):
-            QuanSim(load_contract()["tuning"], {"stock": {"ca_loc": 1}, "customers": [cust(reserved=["I1"])]},
+            QuanSim(flag_off_tuning(), {"stock": {"ca_loc": 1}, "customers": [cust(reserved=["I1"])]},
                     Streams(1), IdAllocator())
 
 
