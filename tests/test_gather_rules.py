@@ -1,4 +1,4 @@
-"""Unit tests for Gather Gameplay survival rules owned by member 1."""
+"""Unit tests for Gather survival rules owned by member 1."""
 
 import unittest
 
@@ -80,7 +80,5 @@ class GatherSurvival(unittest.TestCase):
         self.assertEqual(session.end_row()["reason"], "fainted")
         self.assertEqual(session.sim.hold, [])
         self.assertEqual(events[-1]["data"]["inventory"], {"items": {}})
-
-
 if __name__ == "__main__":
     unittest.main()
