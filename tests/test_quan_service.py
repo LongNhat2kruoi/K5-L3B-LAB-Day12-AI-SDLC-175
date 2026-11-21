@@ -2,13 +2,14 @@
 
 import copy
 import unittest
+from fractions import Fraction
 
 from chonoi.contract import load_contract
 from chonoi.ids import IdAllocator
 from chonoi.inputs import InputState
 from chonoi.rng import Streams
 from chonoi.sim.quan import QuanSim
-from helpers import Workdir, events, frames, read_jsonl, run_headless, snapshots, write_json
+from helpers import Workdir, events, frames, read_jsonl, run_headless, snapshots, stock_items, write_json
 
 DISH = "goi_bong_sung"
 STOVE = [2, 8]
@@ -43,7 +44,7 @@ def release(tick):
 
 
 def at_stove(**kw):
-    return dict({"player": {"pos": STOVE}, "customers": [cust()], "stock": {"bong_sung": 2}}, **kw)
+    return dict({"player": {"pos": STOVE}, "customers": [cust()], "stock": stock_items({"bong_sung": 2})}, **kw)
 
 
 def at_table(**kw):
@@ -73,12 +74,17 @@ class Cook(unittest.TestCase):
         cs = events(rows, "cook_started")
         self.assertEqual(len(cs), 1)
         t0 = cs[0]["tick"]
+        # nấu ở tick t0 (bấm ở tick 9): 2 cá thể đã hao t0 tick * 1/240 => tươi 100 - t0/240 (xuất làm tròn 3 số lẻ);
+        # giá chốt theo tươi: floor(40 * tươi / 100) = 39
+        fresh = round(float(Fraction(100) - Fraction(t0, 240)), 3)
         self.assertEqual(cs[0]["data"], {"stove_id": "B1", "order_id": "C1", "dish_id": DISH,
-                                         "items": ["bong_sung", "bong_sung"], "base_price": 40})
+                                         "items": [{"id": "I1", "kind": "bong_sung", "fresh": fresh},
+                                                   {"id": "I2", "kind": "bong_sung", "fresh": fresh}],
+                                         "base_price": 39})
         snap = [s for s in snapshots(rows) if s["tick"] == t0][0]
-        self.assertEqual(snap["stock"], {})
+        self.assertEqual(snap["stock"], [])
         self.assertEqual(snap["customers"][0]["order_status"], "assigned")
-        self.assertEqual(snap["customers"][0]["reserved"], {})
+        self.assertEqual(snap["customers"][0]["reserved"], [])
         self.assertEqual(snap["stoves"][0]["state"], "cooking")
         dr = events(rows, "dish_ready")
         self.assertEqual([e["tick"] for e in dr], [t0 + 240])
@@ -87,7 +93,7 @@ class Cook(unittest.TestCase):
         self.assertEqual(len(dp), 1)
         self.assertEqual(dp[0]["data"], {"stove_id": "B1", "order_id": "C1", "dish_id": DISH})
         last = snapshots(rows)[-1]
-        self.assertEqual(last["hand"], PAYLOAD)
+        self.assertEqual(last["hand"], dict(PAYLOAD, base_price=39))
         self.assertEqual(last["stoves"][0]["state"], "idle")
         self.assertIsNone(last["stoves"][0]["dish"])
 
@@ -121,7 +127,7 @@ class Cook(unittest.TestCase):
         last = snapshots(rows)[-1]
         self.assertEqual(last["stoves"][0]["state"], "idle")
         self.assertIsNone(last["stoves"][0]["dish"])
-        self.assertEqual(last["stock"], {})  # nguyên liệu đã trừ, không hoàn
+        self.assertEqual(last["stock"], [])  # nguyên liệu đã trừ, không hoàn
         self.assertEqual(events(rows, "dish_ready"), [])
 
 
@@ -134,7 +140,7 @@ class Nearest(unittest.TestCase):
         if ready:
             stove.update(state="ready", dish=dict(PAYLOAD))
         status = "assigned" if ready else "reserved"
-        return {"player": {"pos": [5.0, 5.0]}, "stock": {"bong_sung": 2},
+        return {"player": {"pos": [5.0, 5.0]}, "stock": stock_items({"bong_sung": 2}),
                 "customers": [cust(order_status=status)],
                 "stoves": [stove], "tables": [{"id": "T1", "pos": table_pos}]}
 
@@ -186,7 +192,7 @@ class Serve(unittest.TestCase):
                              "hand": {"order_id": "C2", "dish_id": DISH, "base_price": 40},
                              "customers": [cust(order_status="reserved"),
                                            cust(id="C2", table_id="T2", order_status="assigned", base_price=40)],
-                             "stock": {"bong_sung": 2}})
+                             "stock": stock_items({"bong_sung": 2})})
         self.assertEqual(press_step(sim), [])
         self.assertEqual(sim.hand["order_id"], "C2")
 
