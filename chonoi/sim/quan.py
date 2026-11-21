@@ -101,7 +101,7 @@ class QuanSim:
         for s in self.stoves:
             st, d = s["state"], s["dish"]
             ok = {"idle": d is None and s["cook_ticks_left"] == 0 and s["ready_ticks"] == 0,
-                  "cooking": d is not None and s["cook_ticks_left"] > 0,
+                  "cooking": d is not None and s["cook_ticks_left"] > 0 and s["ready_ticks"] == 0,
                   "ready": d is not None and s["cook_ticks_left"] == 0}[st]
             if not ok:
                 raise BadInput(f"bếp {s['id']}: trạng thái {st} mâu thuẫn với dish/timer")

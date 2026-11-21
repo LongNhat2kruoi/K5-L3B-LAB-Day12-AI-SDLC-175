@@ -77,6 +77,11 @@ class Contradictions(unittest.TestCase):
         self.assert_rejected({"customers": [cust(order_status="assigned")],
                               "stoves": [{"id": "B1", "state": "cooking", "dish": payload(), "cook_ticks_left": 0}]})
 
+    def test_bep_cooking_ready_ticks_khac_0(self):
+        self.assert_rejected({"customers": [cust(order_status="assigned")],
+                              "stoves": [{"id": "B1", "state": "cooking", "dish": payload(),
+                                          "cook_ticks_left": 10, "ready_ticks": 5}]})
+
     def test_bep_idle_con_dish(self):
         self.assert_rejected({"customers": [cust(order_status="assigned")],
                               "stoves": [{"id": "B1", "state": "idle", "dish": payload()}]})
