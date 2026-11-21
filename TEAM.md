@@ -8,8 +8,8 @@ Danh sách được đối chiếu với Git history và các module đã thay �
 |---|---|---|---|---|
 | Long Nhat | LongNhat2kruoi | `sim/gather`, `runner` | Integrator, PO | quangpham |
 | KemmVSAI | KemmVSAI | `sim/gather`, inventory | Gather Resources | LongNhat2kruoi |
-| quangpham | quangpham | `sim/quan`, contract v1.1/v1.2 | PO, Backend | buiductuan |
-| Bùi Đức Tuấn | buiductuan | `play/`, pixel-art, UI | UI, Release | LongNhat2kruoi |
+| quangpham | quangpham | `sim/quan`, contract v1.1/v1.2 | PO, Backend | buiductuan2884-max |
+| Bùi Đức Tuấn | buiductuan2884-max | `play/`, pixel-art, UI | UI, Release | LongNhat2kruoi |
 
 ## Thỏa thuận làm việc nhóm
 
