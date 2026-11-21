@@ -70,7 +70,7 @@ class GatherSurvival(unittest.TestCase):
         interval = self.tuning["gather"]["choke_interval_ticks"]
         session = self.make_session(
             {"pos": [2, 5], "oxygen_ticks": 0, "zero_oxy_ticks": interval - 1, "hp": 1},
-            hold=["ca_loc", "bong_sung"],
+            hold=[{"id": "I1", "kind": "ca_loc", "fresh": 100}, {"id": "I2", "kind": "bong_sung", "fresh": 100}],
         )
 
         events = self.step(session)
@@ -79,6 +79,6 @@ class GatherSurvival(unittest.TestCase):
         self.assertTrue(session.done)
         self.assertEqual(session.end_row()["reason"], "fainted")
         self.assertEqual(session.sim.hold, [])
-        self.assertEqual(events[-1]["data"]["inventory"], {"items": {}})
+        self.assertEqual(events[-1]["data"]["inventory"], {"items": []})
 if __name__ == "__main__":
     unittest.main()

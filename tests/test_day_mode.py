@@ -19,7 +19,7 @@ class DayMode(unittest.TestCase):
 
     def test_gather_inventory_transitions_to_quan_in_same_session(self):
         scenario = {
-            "gather": {"hold": ["ca_loc"], "time_left_ticks": 1},
+            "gather": {"hold": [{"id": "I1", "kind": "ca_loc", "fresh": 100}], "time_left_ticks": 1},
             "quan": {"random_customers": False, "time_left_ticks": 1},
         }
         session = Session("day", self.tuning, scenario, seed=1)
@@ -34,12 +34,13 @@ class DayMode(unittest.TestCase):
         self.assertEqual(rows[1]["phase"], "quan")
         night = session.snapshot()
         self.assertEqual((night["mode"], night["phase"], night["phase_tick"]), ("day", "quan", 0))
-        self.assertEqual(night["stock"], {"ca_loc": 1})
-        self.assertEqual(rows[1]["data"]["inventory"], {"items": {"ca_loc": 1}})
+        # gather chưa hao tươi, quán hao 0.25/s: snapshot ở phase_tick 0 vẫn tươi 100
+        self.assertEqual(night["stock"], [{"id": "I1", "kind": "ca_loc", "fresh": 100.0}])
+        self.assertEqual(rows[1]["data"]["inventory"], {"items": [{"id": "I1", "kind": "ca_loc", "fresh": 100.0}]})
 
     def test_day_finishes_after_night_and_uses_day_end_row(self):
         scenario = {
-            "gather": {"hold": ["ca_loc"], "time_left_ticks": 1},
+            "gather": {"hold": [{"id": "I1", "kind": "ca_loc", "fresh": 100}], "time_left_ticks": 1},
             "quan": {"random_customers": False, "time_left_ticks": 1},
         }
         session = Session("day", self.tuning, scenario, seed=1)
@@ -54,7 +55,7 @@ class DayMode(unittest.TestCase):
 
     def test_day_is_deterministic_for_same_seed_and_input(self):
         scenario = {
-            "gather": {"hold": ["ca_loc"], "time_left_ticks": 2},
+            "gather": {"hold": [{"id": "I1", "kind": "ca_loc", "fresh": 100}], "time_left_ticks": 2},
             "quan": {"random_customers": False, "time_left_ticks": 2},
         }
         a = Session("day", self.tuning, scenario, seed=7)
@@ -66,7 +67,7 @@ class DayMode(unittest.TestCase):
 
     def test_headless_day_accepts_composite_scenario(self):
         scenario = {
-            "gather": {"hold": ["ca_loc"], "time_left_ticks": 1},
+            "gather": {"hold": [{"id": "I1", "kind": "ca_loc", "fresh": 100}], "time_left_ticks": 1},
             "quan": {"random_customers": False, "time_left_ticks": 1},
         }
         with Workdir() as work:

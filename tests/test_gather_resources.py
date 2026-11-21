@@ -4,10 +4,17 @@ import json
 import os
 import tempfile
 import unittest
+from fractions import Fraction
 
 from chonoi.contract import load_contract
 from chonoi.inputs import LiveInputs
 from chonoi.runner import Session
+from helpers import stock_items
+
+
+def item(i, kind):
+    """Cá thể mới nhặt ở gather: tươi 100 (gather chưa hao tươi)."""
+    return {"id": f"I{i}", "kind": kind, "fresh": Fraction(100)}
 
 
 class GatherResources(unittest.TestCase):
@@ -51,14 +58,14 @@ class GatherResources(unittest.TestCase):
         self.assertEqual(events[0]["data"], {
             "node_id": "N1", "kind": "bong_dien_dien", "quantity": 1,
         })
-        self.assertEqual(session.sim.hold, ["bong_dien_dien"])
+        self.assertEqual(session.sim.hold, [item(1, "bong_dien_dien")])
         self.assertEqual(session.sim.nodes[1]["regrow_ticks"], int(self.tuning["gather"]["regrow_s"] * 60))
 
     def test_full_hold_emits_hold_full_without_consuming_node(self):
         capacity = self.tuning["gather"]["hold_capacity"]
         session = self.session(
             player={"pos": [10, 0]},
-            hold=["ca_loc"] * capacity,
+            hold=stock_items({"ca_loc": capacity}),
             nodes=[{"id": "N1", "kind": "bong_sung", "pos": [10, 0]}],
             fish=[],
         )
@@ -106,7 +113,7 @@ class GatherResources(unittest.TestCase):
 
         self.assertEqual(self.names(events), ["fish_caught"])
         self.assertEqual(events[0]["data"]["quantity"], self.tuning["gather"]["fish_yield"]["ca_linh"])
-        self.assertEqual(session.sim.hold, ["ca_linh"] * 3)
+        self.assertEqual(session.sim.hold, [item(n, "ca_linh") for n in (1, 2, 3)])
         self.assertEqual(session.sim.fish, [])
         self.assertEqual(session.sim.catch_cd_ticks, int(self.tuning["gather"]["catch_cooldown_s"] * 60))
 
@@ -121,13 +128,13 @@ class GatherResources(unittest.TestCase):
         events = session.step(self.press("catch"))
 
         self.assertEqual(events, [])
-        self.assertEqual(session.sim.hold, ["ca_loc"])
+        self.assertEqual(session.sim.hold, [item(1, "ca_loc")])
 
     def test_fish_hold_full_preserves_fish_and_cooldown(self):
         capacity = self.tuning["gather"]["hold_capacity"]
         session = self.session(
             player={"pos": [10, 5]},
-            hold=["ca_loc"] * (capacity - 1),
+            hold=stock_items({"ca_loc": capacity - 1}),
             nodes=[],
             fish=[{"id": "F1", "kind": "ca_linh", "pos": [10, 5]}],
         )
@@ -164,7 +171,7 @@ class GatherResources(unittest.TestCase):
         end_events = session.step(self.press("interact"))
 
         self.assertEqual(self.names(end_events), ["gather_end"])
-        self.assertEqual(end_events[0]["data"]["inventory"], {"items": {"bong_sung": 1}})
+        self.assertEqual(end_events[0]["data"]["inventory"], {"items": [{"id": "I1", "kind": "bong_sung", "fresh": 100.0}]})
         self.assertEqual(session.end_row()["reason"], "docked")
 
     def test_inventory_out_is_written_once_after_gather_end(self):
@@ -185,7 +192,7 @@ class GatherResources(unittest.TestCase):
             session.write_inventory_if_done(path)
 
             with open(path, encoding="utf-8") as stream:
-                self.assertEqual(json.load(stream), {"items": {"bong_sung": 1}})
+                self.assertEqual(json.load(stream), {"items": [{"id": "I1", "kind": "bong_sung", "fresh": 100.0}]})
 
 
 if __name__ == "__main__":
