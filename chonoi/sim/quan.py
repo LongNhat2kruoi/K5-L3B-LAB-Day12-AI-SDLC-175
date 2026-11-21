@@ -16,11 +16,13 @@ class QuanSim:
     mode = "quan"
     phase = "quan"
 
-    def __init__(self, tuning, scenario, streams, ids, inventory=None):
+    def __init__(self, tuning, scenario, streams, ids, inventory=None, plan_dishes=None):
         t = tuning["quan"]
         self.t = t
         self.menu = tuning["menu"]
         self.rng = streams
+        # kế hoạch món của ngày (mode day truyền vào); None = cả menu
+        self.plan_dishes = None if plan_dishes is None else frozenset(plan_dishes)
         self.ids = ids
         p = scenario.get("player", {})
         self.pos = list(p.get("pos", t["start_pos"]))
@@ -80,6 +82,8 @@ class QuanSim:
     def _check_fixture(self):
         held = {}
         for c in self.customers:
+            if self.plan_dishes is not None and c["dish_id"] not in self.plan_dishes:
+                raise BadInput(f"customers.{c['id']}: món {c['dish_id']} ngoài kế hoạch")
             if c["order_status"] == "reserved":
                 if c["reserved"] != self.menu[c["dish_id"]]["recipe"]:
                     raise BadInput(f"customers.{c['id']}: reserved khác công thức món")
@@ -291,7 +295,8 @@ class QuanSim:
         table = free[0]  # self.tables đã sắp theo id
         avail = self._available()
         cands = [d for d in sorted(self.menu)
-                 if all(avail.get(k, 0) >= n for k, n in self.menu[d]["recipe"].items())]
+                 if (self.plan_dishes is None or d in self.plan_dishes)
+                 and all(avail.get(k, 0) >= n for k, n in self.menu[d]["recipe"].items())]
         if not cands:
             events.append(("no_dish", {}))
             return
