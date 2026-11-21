@@ -71,6 +71,18 @@ def usable(items, spoil):
     return Counter(x["kind"] for x in items if x.get("fresh") is None or x["fresh"] >= spoil)
 
 
+WALK = 50  # số khung hình khách đi giữa cửa và ghế
+
+
+def walk_pos(u, a, b, c):
+    """Đi thẳng a->b (nửa đầu) rồi b->c (nửa sau), u trong [0,1]."""
+    if u < 0.5:
+        a, c, u = a, b, u * 2
+    else:
+        a, u = b, u * 2 - 1
+    return int(a[0] + (c[0] - a[0]) * u), int(a[1] + (c[1] - a[1]) * u)
+
+
 def kname(k):
     return KIND.get(k, (k, CREAM))[0]
 
@@ -152,6 +164,7 @@ class Game:
         self.scene = mode
         self.toasts = []
         if mode == "quan":
+            self.guests, self.leavers = {}, []   # id -> (khung hình vào, bàn); khách đang đi ra
             self.stats = {"served": 0, "left": 0, "tips": 0, "paid": 0, "no_dish": 0, "rep0": self.snap.get("reputation", 0)}
         if mode not in self.seen:
             self.seen.add(mode)
@@ -943,7 +956,20 @@ class Game:
             self.text(x + 11, y - 12, "Chín!", LANTERN, shadow=True)
         self.text(x - 7, y + 14, st.get("id", "Bếp") if len(self.snap.get("stoves", [])) > 1 else "Bếp", CREAM, shadow=False)
 
-    def draw_table(self, x, y, c, pat_max):
+    def guest(self, cx, cy, step=0):
+        """Khách: áo chàm, nón lá, râu bạc dài tới ngực. step lẻ = chân bước."""
+        pyxel.rect(cx - 4, cy - 1, 9, 8, IND)                    # áo
+        if step % 2:
+            pyxel.line(cx - 2, cy + 7, cx - 3, cy + 9, WOOD_DK); pyxel.line(cx + 2, cy + 7, cx + 3, cy + 9, WOOD_DK)
+        else:
+            pyxel.line(cx - 1, cy + 7, cx - 1, cy + 9, WOOD_DK); pyxel.line(cx + 1, cy + 7, cx + 1, cy + 9, WOOD_DK)
+        pyxel.circ(cx, cy - 4, 3, SKIN)
+        pyxel.tri(cx - 3, cy - 3, cx + 3, cy - 3, cx, cy + 8, CREAM)    # râu dài
+        pyxel.line(cx, cy - 1, cx, cy + 6, GLASS)
+        pyxel.tri(cx - 7, cy - 5, cx + 7, cy - 5, cx, cy - 12, LANTERN)   # nón lá
+        pyxel.trib(cx - 7, cy - 5, cx + 7, cy - 5, cx, cy - 12, BAMBOO)
+
+    def draw_table(self, x, y, c, pat_max, seated=True):
         pyxel.circ(x - 15, y + 3, 3, WOOD_DK); pyxel.circ(x + 15, y + 3, 3, WOOD_DK)   # ghế đẩu
         pyxel.rect(x - 11, y - 6, 23, 12, SKIN_DK)
         pyxel.rectb(x - 11, y - 6, 23, 12, WOOD_DK)
@@ -951,10 +977,8 @@ class Game:
         if not c:
             return
         cx, cy = x - 15, y - 2                                   # khách ngồi ghế trái
-        pyxel.rect(cx - 4, cy - 1, 9, 8, IND)                    # áo
-        pyxel.circ(cx, cy - 4, 3, SKIN)
-        pyxel.tri(cx - 7, cy - 5, cx + 7, cy - 5, cx, cy - 12, LANTERN)   # nón lá
-        pyxel.trib(cx - 7, cy - 5, cx + 7, cy - 5, cx, cy - 12, BAMBOO)
+        if seated:
+            self.guest(cx, cy)
         if c.get("state") == "eating":
             pyxel.elli(x - 4, y - 3, 9, 5, CREAM); pyxel.elli(x - 2, y - 2, 5, 2, kcol("ca_loc"))
             self.text(cx - 4, cy - 26, "ngon...", CREAM, shadow=False)
@@ -989,9 +1013,36 @@ class Game:
             pyxel.circ(ox + i * S, oy - 1, 1, LANTERN if on else BAMBOO)
         for st in s.get("stoves", []):
             self.draw_stove(sx(st["pos"][0]), sy(st["pos"][1]), st)
+        # cửa: khoảng trống ở tường phải sát góc dưới, cầu ván ra sông
+        dx, dy = ox + X * S, sy(0) - 14
+        pyxel.rect(dx - 1, dy, 3, 13, BAMBOO)
+        pyxel.rect(dx + 2, dy + 1, 14, 11, WOOD_DK)
+        for i in range(dx + 4, dx + 16, 4):
+            pyxel.line(i, dy + 1, i, dy + 11, MUD)
+        self.text(dx + 3, dy - 11, "Cửa", CREAM, shadow=False)
+        path0, path1 = (dx + 12, dy + 6), (dx - 8, dy + 6)        # ngoài cầu ván -> trong cửa
+        seat = {tb["id"]: (sx(tb["pos"][0]) - 15, sy(tb["pos"][1]) - 2) for tb in s.get("tables", [])}
+        custs = {c.get("id"): c for c in s.get("customers", [])}
+        f = pyxel.frame_count
+        for cid, c in custs.items():
+            self.guests.setdefault(cid, (f, c.get("table_id")))
+        for cid in [k for k in self.guests if k not in custs]:     # trả tiền / bỏ về -> đi ra cửa
+            f0, tid = self.guests.pop(cid)
+            if tid in seat:
+                self.leavers.append((f, seat[tid]))
+        walking = {cid for cid, (f0, _) in self.guests.items() if f - f0 < WALK}
         seated = {c.get("table_id"): c for c in s.get("customers", [])}
         for tb in s.get("tables", []):
-            self.draw_table(sx(tb["pos"][0]), sy(tb["pos"][1]), seated.get(tb["id"]), t["patience_s"] * 60)
+            c = seated.get(tb["id"])
+            self.draw_table(sx(tb["pos"][0]), sy(tb["pos"][1]), c, t["patience_s"] * 60,
+                            seated=bool(c) and c.get("id") not in walking)
+        for cid in walking:
+            f0, tid = self.guests[cid]
+            if tid in seat:
+                self.guest(*walk_pos((f - f0) / WALK, path0, path1, seat[tid]), (f - f0) // 6)
+        self.leavers = [(f0, st) for f0, st in self.leavers if f - f0 < WALK]
+        for f0, st in self.leavers:
+            self.guest(*walk_pos((f - f0) / WALK, st, path1, path0), (f - f0) // 6)
         # Út Sen: đi xuống / bưng món / đi ngang (lật trái)
         p = s.get("player", {})
         x, z = p.get("pos", t["start_pos"])
