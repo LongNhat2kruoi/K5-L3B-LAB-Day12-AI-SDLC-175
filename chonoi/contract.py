@@ -38,10 +38,6 @@ def load_contract(path=DEFAULT_PATH) -> dict:
         lb = ext.get("leaderboard") if isinstance(ext, dict) else None
         if not isinstance(lb, dict) or lb.get("max_entries") != 10 or lb.get("standard_days") != 5:
             raise BadInput("contract v1.3 cần extensions.leaderboard top-10/5 ngày")
-        # P1/P2 fixtures remain loadable during the migration; v1.3 output is still item-based.
-        c["tuning"]["_legacy_compat"] = True
-        c["tuning"]["gather"]["_legacy_compat"] = True
-        c["tuning"]["quan"]["_legacy_compat"] = True
     return c
 
 

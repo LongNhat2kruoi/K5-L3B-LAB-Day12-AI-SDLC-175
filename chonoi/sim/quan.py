@@ -35,7 +35,6 @@ class QuanSim:
         # Mô hình chung: stock là list cá thể {"id","kind","fresh": Fraction} cho cả v1.1 lẫn v1.2.
         # v1.1 (cờ tắt): kho đếm -> cá thể id tạm, fresh 100, không hao; chỉ I/O và hao/ươn/giá khác theo cờ.
         self.v12 = fresh.enabled(tuning)
-        self.compat_legacy = inventory is None and bool(t.get("_legacy_compat"))
         if self.v12:
             self.decay = fresh.per_tick(tuning, "quan")
             self.threshold = fresh.threshold(tuning)
@@ -94,14 +93,7 @@ class QuanSim:
     def _build_stock(self, raw):
         if self.v12:
             if not isinstance(raw, list):
-                if not (self.compat_legacy and isinstance(raw, dict)):
-                    raise BadInput("contract v1.2: kho quán phải là mảng cá thể, không nhận kho đếm")
-                out, n = [], 0
-                for k in sorted(raw):
-                    for _ in range(max(0, raw[k])):
-                        n += 1
-                        out.append({"id": f"_S{n}", "kind": k, "fresh": 100})
-                return out
+                raise BadInput("contract v1.2: kho quán phải là mảng cá thể, không nhận kho đếm")
             # file kho đã chuẩn hóa (fresh là Fraction) đi thẳng; scenario.stock còn là số JSON thô
             exact = {i: e["fresh"] for i, e in enumerate(raw) if isinstance(e, dict) and isinstance(e.get("fresh"), Fraction)}
             plain = [dict(e, fresh=0) if i in exact else e for i, e in enumerate(raw)]
@@ -134,13 +126,8 @@ class QuanSim:
                 r = c["reserved"]
                 if self.v12:
                     if not isinstance(r, list):
-                        if self.compat_legacy and isinstance(r, dict):
-                            # Legacy fixtures describe kinds; v1.3 runtime allocates exact ids later.
-                            pass
-                        else:
-                            raise BadInput(f"customers.{c['id']}: contract v1.2 cần reserved là mảng id cá thể")
-                    else:
-                        e["reserved"] = list(r)
+                        raise BadInput(f"customers.{c['id']}: contract v1.2 cần reserved là mảng id cá thể")
+                    e["reserved"] = list(r)
                 else:
                     if not isinstance(r, dict):
                         raise BadInput(f"customers.{c['id']}: contract v1.1 cần reserved là object kind -> số")
