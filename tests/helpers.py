@@ -16,6 +16,16 @@ def write_json(path, obj):
     return path
 
 
+def stock_items(counts, fresh=100):
+    """Kho cá thể v1.2 từ bảng đếm: id I1, I2, ... theo thứ tự khóa; fresh mặc định 100."""
+    out, n = [], 0
+    for kind, qty in counts.items():
+        for _ in range(qty):
+            n += 1
+            out.append({"id": f"I{n}", "kind": kind, "fresh": fresh})
+    return out
+
+
 def frames(*fr):
     return {"frames": list(fr)}
 

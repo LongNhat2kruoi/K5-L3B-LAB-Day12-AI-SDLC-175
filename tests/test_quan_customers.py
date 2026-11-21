@@ -2,17 +2,18 @@
 
 import copy
 import unittest
+from fractions import Fraction
 
 from chonoi.contract import load_contract
 from chonoi.ids import IdAllocator
 from chonoi.inputs import InputState
 from chonoi.rng import Streams
 from chonoi.sim.quan import QuanSim
-from helpers import Workdir, events, read_jsonl, run_headless, write_json
+from helpers import Workdir, events, read_jsonl, run_headless, stock_items, write_json
 
 DISH = "ca_loc_nuong_trui"
 ALL_DISHES = {"ca_loc_nuong_trui", "goi_bong_sung", "lau_ca_linh_dien_dien", "canh_chua_ca_loc"}
-RICH = {"ca_loc": 5, "bong_sung": 5, "ca_linh": 5, "bong_dien_dien": 5}
+RICH = stock_items({"ca_loc": 5, "bong_sung": 5, "ca_linh": 5, "bong_dien_dien": 5})
 
 
 def run(block, ticks, seed=1):
@@ -50,7 +51,7 @@ class Arrivals(unittest.TestCase):
     def test_khach_ke_tiep_khi_ban_trong_lai(self):
         # 4 bàn, chỉ 1 ca_loc: khách 1 đến 120 giữ hết nguyên liệu, các lượt 1020/1920/2820 no_dish;
         # khách 1 hết kiên nhẫn 3720 (= 120 + 4 * 900) rồi lượt kế đến cùng tick
-        rows, _ = run({"stock": {"ca_loc": 1}}, 3800)
+        rows, _ = run({"stock": stock_items({"ca_loc": 1})}, 3800)
         self.assertEqual([e["tick"] for e in events(rows, "customer_arrived")], [120, 3720])
         self.assertEqual([e["tick"] for e in events(rows, "no_dish")], [1020, 1920, 2820])
         left = events(rows, "customer_left")
@@ -59,7 +60,7 @@ class Arrivals(unittest.TestCase):
         self.assertEqual(names, ["customer_left", "customer_arrived"])
 
     def test_khong_du_mon_no_dish(self):
-        rows, _ = run({"stock": {}}, 130)
+        rows, _ = run({"stock": []}, 130)
         nd = events(rows, "no_dish")
         self.assertEqual([(e["tick"], e["data"]) for e in nd], [(120, {})])
         self.assertEqual(events(rows, "customer_arrived"), [])
@@ -79,27 +80,28 @@ class Arrivals(unittest.TestCase):
 
     def test_giu_cho_an_kho_voi_khach_sau(self):
         t = copy.deepcopy(load_contract()["tuning"])
-        sim = QuanSim(t, {"stock": {"ca_loc": 1}}, Streams(1), IdAllocator())
+        sim = QuanSim(t, {"stock": stock_items({"ca_loc": 1})}, Streams(1), IdAllocator())
         inp = InputState((0.0, 0.0), {}, set())
         seen = []
         for _ in range(1020):
             seen += [(sim.phase_tick, n, d) for n, d in sim.step(inp)]
         self.assertEqual([s[:2] for s in seen], [(120, "customer_arrived"), (1020, "no_dish")])
-        self.assertEqual(sim.customers[0]["reserved"], {"ca_loc": 1})
+        self.assertEqual(sim.customers[0]["reserved"], ["I1"])
         self.assertEqual(sim._available()["ca_loc"], 0)
-        self.assertEqual(sim.stock, {"ca_loc": 1})  # tồn vật lý không đổi
+        # tồn vật lý không đổi (chỉ hao tươi 0.25/s: 1020 tick = 4.25 điểm)
+        self.assertEqual(sim.stock, [{"id": "I1", "kind": "ca_loc", "fresh": Fraction(100) - Fraction(1020, 240)}])
         # giữ chỗ là bản sao, không dùng chung với menu
         self.assertIsNot(sim.customers[0]["reserved"], sim.menu[DISH]["recipe"])
 
     def test_fixture_reserved_khong_dung_chung_menu(self):
         t = copy.deepcopy(load_contract()["tuning"])
-        sim = QuanSim(t, {"stock": {"ca_loc": 1}, "customers": [cust()]}, Streams(1), IdAllocator())
+        sim = QuanSim(t, {"stock": stock_items({"ca_loc": 1}), "customers": [cust()]}, Streams(1), IdAllocator())
         self.assertIsNot(sim.customers[0]["reserved"], sim.menu[DISH]["recipe"])
 
 
 class Leaving(unittest.TestCase):
     def test_het_kien_nhan_tru_uy_tin(self):
-        rows, _ = run({"stock": {"ca_loc": 1}, "random_customers": False,
+        rows, _ = run({"stock": stock_items({"ca_loc": 1}), "random_customers": False,
                        "customers": [cust(patience_ticks_left=5)]}, 8)
         left = events(rows, "customer_left")
         self.assertEqual([(e["tick"], e["data"]) for e in left],
@@ -108,10 +110,12 @@ class Leaving(unittest.TestCase):
         self.assertEqual(snaps[0]["reputation"], 3.0)
         self.assertEqual(snaps[-1]["reputation"], 2.5)
         self.assertEqual(snaps[-1]["customers"], [])
-        self.assertEqual(snaps[-1]["stock"], {"ca_loc": 1})  # nguyên liệu vẫn còn, giữ chỗ được nhả
+        # nguyên liệu vẫn còn, giữ chỗ được nhả; tươi hao 0.25/s => 8 tick còn 100 - 8/240
+        self.assertEqual(snaps[-1]["stock"],
+                         [{"id": "I1", "kind": "ca_loc", "fresh": round(float(Fraction(100) - Fraction(8, 240)), 3)}])  # xuất làm tròn 3 số lẻ
 
     def test_het_ca_khach_cho_roi_closing(self):
-        rows, _ = run({"stock": {"ca_loc": 1}, "random_customers": False, "time_left_ticks": 3,
+        rows, _ = run({"stock": stock_items({"ca_loc": 1}), "random_customers": False, "time_left_ticks": 3,
                        "customers": [cust()]}, 10)
         left = events(rows, "customer_left")
         self.assertEqual([(e["tick"], e["data"]) for e in left],
@@ -134,15 +138,15 @@ class Leaving(unittest.TestCase):
     def test_roi_don_mon_tren_bep_va_tay(self):
         t = copy.deepcopy(load_contract()["tuning"])
         pl = {"order_id": "C1", "dish_id": DISH, "base_price": 60}
-        sc = {"stock": {"ca_loc": 1}, "random_customers": False,
-              "customers": [cust(order_status="assigned", reserved={}, patience_ticks_left=1)],
+        sc = {"stock": stock_items({"ca_loc": 1}), "random_customers": False,
+              "customers": [cust(order_status="assigned", reserved=[], patience_ticks_left=1)],
               "stoves": [{"id": "B1", "state": "cooking", "dish": pl, "cook_ticks_left": 50}]}
         sim = QuanSim(t, sc, Streams(1), IdAllocator())
         sim.step(InputState((0.0, 0.0), {}, set()))
         s = sim.stoves[0]
         self.assertEqual((s["state"], s["dish"], s["cook_ticks_left"], s["ready_ticks"]), ("idle", None, 0, 0))
-        sc = {"stock": {"ca_loc": 1}, "random_customers": False, "hand": pl,
-              "customers": [cust(order_status="assigned", reserved={}, patience_ticks_left=1)]}
+        sc = {"stock": stock_items({"ca_loc": 1}), "random_customers": False, "hand": pl,
+              "customers": [cust(order_status="assigned", reserved=[], patience_ticks_left=1)]}
         sim = QuanSim(t, sc, Streams(1), IdAllocator())
         sim.step(InputState((0.0, 0.0), {}, set()))
         self.assertIsNone(sim.hand)
@@ -156,7 +160,7 @@ class Determinism(unittest.TestCase):
 
     def test_seed_khac_van_chon_mon_hop_le(self):
         for seed in range(1, 8):
-            rows, _ = run({"stock": {"ca_loc": 1, "bong_sung": 2}}, 130, seed=seed)
+            rows, _ = run({"stock": stock_items({"ca_loc": 1, "bong_sung": 2})}, 130, seed=seed)
             d = events(rows, "customer_arrived")[0]["data"]["dish_id"]
             self.assertIn(d, {"ca_loc_nuong_trui", "goi_bong_sung"})
 
